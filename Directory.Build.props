@@ -7,4 +7,9 @@
     <Using Include="System.Text"/>
     <Using Include="System.Text.RegularExpressions"/>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AoC.2024.1.1", "AoC.2024.1.1\AoC.2024.1.1.csproj", "{968F8116-009A-424A-8554-DE00D173903F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1DEF48B6-79FC-42BF-B001-FE88F6659B63}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\Directory.Build.props = ..\Directory.Build.props
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AoC.2024.1.2", "AoC.2024.1.2\AoC.2024.1.2.csproj", "{4C5E219E-9393-4481-894E-7D0C68F7B224}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{968F8116-009A-424A-8554-DE00D173903F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{968F8116-009A-424A-8554-DE00D173903F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{968F8116-009A-424A-8554-DE00D173903F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{968F8116-009A-424A-8554-DE00D173903F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C5E219E-9393-4481-894E-7D0C68F7B224}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C5E219E-9393-4481-894E-7D0C68F7B224}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C5E219E-9393-4481-894E-7D0C68F7B224}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C5E219E-9393-4481-894E-7D0C68F7B224}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
