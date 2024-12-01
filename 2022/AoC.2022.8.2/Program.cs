@@ -6,15 +6,16 @@ var grid = File.ReadAllLines(file)
 int maxx = grid.Keys.Max(k => k.x);
 int maxy = grid.Keys.Max(k => k.y);
 
-var visibile = grid.Count(tree =>
+var best = grid.Max(tree =>
 {
-    grid.Where(g => g.Key.x == tree.Key.x && g.Key.y < tree.Key.y).OrderByDescending(g => g.Key.y).TakeWhile(g => g.Value).ToList().ForEach(g => Console.WriteLine(g));
+    int i, up = 0, down = 0, left = 0, right = 0;
 
-    var axes = grid.Where(forest => forest.Key.x == tree.Key.x || forest.Key.y == tree.Key.y);
-    return axes.Where(left => left.Key.x < tree.Key.x).All(left => left.Value < tree.Value)
-        || axes.Where(right => right.Key.x > tree.Key.x).All(right => right.Value < tree.Value)
-        || axes.Where(up => up.Key.y < tree.Key.y).All(up => up.Value < tree.Value)
-        || axes.Where(down => down.Key.y > tree.Key.y).All(down => down.Value < tree.Value);
+    for (i = tree.Key.y; i > 0; i--) { up++; if (grid[(tree.Key.x, i - 1)] >= tree.Value) break; }
+    for (i = tree.Key.y; i < maxy; i++) { down++; if (grid[(tree.Key.x, i + 1)] >= tree.Value) break; }
+    for (i = tree.Key.x; i > 0; i--) { left++; if (grid[(i - 1, tree.Key.y)] >= tree.Value) break; }
+    for (i = tree.Key.x; i < maxx; i++) { right++; if (grid[(i + 1, tree.Key.y)] >= tree.Value) break; }
+
+    return up * down * left * right;
 });
 
-Console.WriteLine(new { visibile });
+Console.WriteLine(new { best });
