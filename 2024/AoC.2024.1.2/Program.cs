@@ -10,8 +10,6 @@ foreach (var line in File.ReadAllLines(file))
     right.Add(int.Parse(parts[1]));
 }
 
-left.Sort();
-right.Sort();
-var result = left.Zip(right, (l, r) => Math.Abs(l - r)).Sum();
+var result = left.Sum(l => l * right.Count(r => r == l));
 
 Console.WriteLine(new { result });
