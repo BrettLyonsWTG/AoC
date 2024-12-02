@@ -3,7 +3,7 @@
 var left = new List<int>();
 var right = new List<int>();
 
-foreach (var line in File.ReadAllLines(file))
+foreach (var line in File.ReadLines(file))
 {
     var parts = line.Split("   ");
     left.Add(int.Parse(parts[0]));
