@@ -1,6 +1,4 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-
-var file = Debugger.IsAttached ? "input.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "input.txt" : "input.txt";
 
 var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(p => p.p, p => p.c);
 
@@ -18,7 +16,7 @@ var reported = 0;
 
 while (work.Count > 0)
 {
-    var cur = work.OrderBy(w => Math.Abs(end.x - w.x) + Math.Abs(end.y - w.y)).First();
+    var cur = work.OrderBy(w => Math.Abs(end.x - w.x) + Math.Abs(end.y - w.y)).ThenByDescending(w => grid[w]).First();
     work.Remove(cur);
     var path = paths[cur];
 
@@ -39,11 +37,11 @@ while (work.Count > 0)
                 if (next != end)
                 {
                     work.Add(next);
-                    if (prev.Count > reported)
+                    //if (prev.Count > reported)
                     {
                         reported = prev.Count;
                         PrintPath(prev);
-                        //Console.ReadKey(true);
+                        Console.ReadKey(true);
                     }
                 }
             }
@@ -54,11 +52,11 @@ while (work.Count > 0)
             if (next != end)
             {
                 work.Add(next);
-                if (paths[next].Count > reported)
+                //if (paths[next].Count > reported)
                 {
                     reported = paths[next].Count;
                     PrintPath(paths[next]);
-                    //Console.ReadKey(true);
+                    Console.ReadKey(true);
                 }
             }
         }
@@ -71,6 +69,8 @@ Console.WriteLine(paths[end].Count - 1);
 
 void PrintPath(List<(int x, int y)> path)
 {
+    var defaultColor = Console.ForegroundColor;
+
     for (var y = 0; y <= maxy; y++)
     {
         for (var x = 0; x <= maxx; x++)
@@ -83,6 +83,7 @@ void PrintPath(List<(int x, int y)> path)
                 else
                 {
                     var n = path[path.IndexOf(p) + 1];
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write((n.x - p.x, n.y - p.y) switch
                     {
                         (1, 0) => '>',
@@ -95,8 +96,11 @@ void PrintPath(List<(int x, int y)> path)
             }
             else
             {
+                if (paths.ContainsKey(p)) Console.ForegroundColor = ConsoleColor.Green;
+                else if (work.Contains(p)) Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write(grid[p]);
             }
+            Console.ForegroundColor = defaultColor;
         }
         Console.WriteLine();
     }
