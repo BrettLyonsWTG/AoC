@@ -51,5 +51,3 @@ for (var y = 0; y <= maxy; y++)
 var result = r.Count + l.Count + d.Count + u.Count + dr.Count + dl.Count + ur.Count + ul.Count;
 
 Console.WriteLine(new { result });
-
-// 2466 is too low
