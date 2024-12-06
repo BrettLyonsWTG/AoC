@@ -7,128 +7,137 @@ var start = grid.Single(g => g.Value == '^').Key;
 
 var starting = GetPositions((int.MinValue, int.MinValue));
 
+HashSet<(int x, int y, char d)> lastPositions = [];
+(int x, int y) lastObstacle = (int.MinValue, int.MinValue);
 int result = 0;
 
-foreach (var pos in starting.positions.Where(p => p.Key.x < maxx && p.Value.Contains('>') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y > p.Key.y && g.Value is '#')))
+foreach (var pos in starting.positions.Where(p => p.x < maxx && p.d is '>' or '┌' && grid.Any(g => g.Key.x == p.x && g.Key.y > p.y && g.Value is '#')))
 {
-    var obstacle = (pos.Key.x + 1, pos.Key.y);
+    var obstacle = (pos.x + 1, pos.y);
     var test = GetPositions(obstacle);
-    //Console.WriteLine(new { pos.Key, dir = '>', test.looping });
     if (test.looping)
     {
         result++;
-        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+        lastPositions = test.positions;
+        lastObstacle = obstacle;
     }
 }
 
-foreach (var pos in starting.positions.Where(p => p.Key.x > 0 && p.Value.Contains('<') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y < p.Key.y && g.Value is '#')))
+foreach (var pos in starting.positions.Where(p => p.x > 0 && p.d is '<' or '┘' && grid.Any(g => g.Key.x == p.x && g.Key.y < p.y && g.Value is '#')))
 {
-    var obstacle = (pos.Key.x - 1, pos.Key.y);
+    var obstacle = (pos.x - 1, pos.y);
     var test = GetPositions(obstacle);
-    //Console.WriteLine(new { pos.Key, dir = '<', test.looping });
     if (test.looping)
     {
         result++;
-        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+        lastPositions = test.positions;
+        lastObstacle = obstacle;
     }
 }
 
-foreach (var pos in starting.positions.Where(p => p.Key.y < maxy && p.Value.Contains('v') && grid.Any(g => g.Key.x < p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
+foreach (var pos in starting.positions.Where(p => p.y < maxy && p.d is 'v' or '┐' && grid.Any(g => g.Key.x < p.x && g.Key.y == p.y && g.Value is '#')))
 {
-    var obstacle = (pos.Key.x, pos.Key.y + 1);
+    var obstacle = (pos.x, pos.y + 1);
     var test = GetPositions(obstacle);
-    //Console.WriteLine(new { pos.Key, dir = 'v', test.looping });
     if (test.looping)
     {
         result++;
-        if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+        lastPositions = test.positions;
+        lastObstacle = obstacle;
     }
 }
 
-foreach (var pos in starting.positions.Where(p => p.Key.y > 0 && p.Value.Contains('^') && grid.Any(g => g.Key.x > p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
+foreach (var pos in starting.positions.Where(p => p.y > 0 && p.d is '^' or '└' && grid.Any(g => g.Key.x > p.x && g.Key.y == p.y && g.Value is '#')))
 {
-    var obstacle = (pos.Key.x, pos.Key.y - 1);
+    var obstacle = (pos.x, pos.y - 1);
     var test = GetPositions(obstacle);
-    //Console.WriteLine(new { pos.Key, dir = '^', test.looping });
     if (test.looping)
     {
         result++;
-        if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+        lastPositions = test.positions;
+        lastObstacle = obstacle;
     }
 }
 
+PrintPositions(lastPositions, lastObstacle);
 Console.WriteLine(new { result });
 
-(Dictionary<(int x, int y), List<char>> positions, bool looping) GetPositions((int x, int y) obstacle)
+(HashSet<(int x, int y, char d)> positions, bool looping) GetPositions((int x, int y) obstacle)
 {
-    var positions = new Dictionary<(int x, int y), List<char>>();
+    var positions = new HashSet<(int x, int y, char d)>();
     bool looping = false;
-    var pos = start;
-    var dir = '^';
+    var pos = (start.x, start.y, d: '^');
 
     while (true)
     {
-        var next = GetNext(pos, dir);
-        var path = grid.TryGetValue(next, out char c) && c is '#' || next == obstacle ? '+' : dir;
-        if (positions.TryGetValue(pos, out var p))
+        var next = GetNext(pos);
+        pos.d = grid.TryGetValue((next.x, next.y), out char c) && c is '#' || (next.x, next.y) == obstacle
+            ? pos.d switch { '^' => '┌', 'v' => '┘', '<' => '└', '>' => '┐', _ => throw new InvalidOperationException() } : pos.d;
+        if (positions.Contains(pos))
         {
-            if (p.Contains(path)) 
-            { 
-                looping = true; 
-                break;
-            }
-            else
-            {
-                p.Add(path);
-            }
+            looping = true;
+            break;
         }
         else
         {
-            positions[pos] = [path];
+            positions.Add(pos);
         }
         if (next.x < 0 || next.x > maxx || next.y < 0 || next.y > maxy) break;
 
-        if (grid[next] is '#' || next == obstacle)
+        if (pos.d is '┌' or '┘' or '└' or '┐')
         {
-            dir = dir switch
+            pos.d = pos.d switch
             {
-                '^' => '>',
-                '>' => 'v',
-                'v' => '<',
-                '<' => '^',
-                _ => throw new InvalidOperationException()
+                '└' => '^',
+                '┌' => '>',
+                '┐' => 'v',
+                '┘' => '<',
+                _ => pos.d
             };
-            next = GetNext(pos, dir);
+            next = GetNext(pos);
         }
-        pos = next;
+        pos = (next.x, next.y, pos.d);
     }
     return (positions, looping);
 }
 
-void PrintPositions(Dictionary<(int x, int y), List<char>> positions, (int x, int y) obstacle)
+void PrintPositions(HashSet<(int x, int y, char d)> positions, (int x, int y) obstacle)
 {
     for (int y = 0; y <= maxy; y++)
     {
         for (int x = 0; x < maxx; x++)
         {
-            Console.Write((x, y) == start ? '^' : (x, y) == obstacle ? 'O' : positions.TryGetValue((x, y), out var c) ? c.Count > 1 ? '+' 
-                : c[0] is '<' or '>' ? '-' : c[0] is '^' or 'v' ? '|' : c[0] : grid[(x, y)]);
+            var paths = positions.Where(p => p.x == x && p.y == y).Select(p => p.d).ToArray();
+            Console.Write((x, y) == start
+                ? '^'
+                : (x, y) == obstacle
+                    ? 'O'
+                    : paths.Length switch
+                    {
+                        0 => grid[(x, y)],
+                        1 when paths[0] is '<' or '>' => '─',
+                        1 when paths[0] is '^' or 'v' => '│',
+                        1 => paths[0],
+                        _ => '┼'
+                    });
         }
         Console.WriteLine();
     }
     Console.WriteLine();
 }
 
-static (int x, int y) GetNext((int x, int y) pos, char dir)
+static (int x, int y, char d) GetNext((int x, int y, char d) pos)
 {
-    return dir switch
+    return pos.d switch
     {
-        '^' => (pos.x, pos.y - 1),
-        '>' => (pos.x + 1, pos.y),
-        'v' => (pos.x, pos.y + 1),
-        '<' => (pos.x - 1, pos.y),
+        '^' => (pos.x, pos.y - 1, pos.d),
+        '>' => (pos.x + 1, pos.y, pos.d),
+        'v' => (pos.x, pos.y + 1, pos.d),
+        '<' => (pos.x - 1, pos.y, pos.d),
         _ => throw new InvalidOperationException()
     };
 }
 
 // 2258 is too high
+// 2120 is too low
+// 2126 is too low
