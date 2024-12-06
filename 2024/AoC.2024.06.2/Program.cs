@@ -1,6 +1,4 @@
-﻿using static System.Net.Mime.MediaTypeNames;
-
-var file = Debugger.IsAttached ? "input.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (x, y, c))).ToDictionary(g => (g.x, g.y), g => g.c);
 var maxx = grid.Keys.Max(g => g.x);
@@ -11,59 +9,53 @@ var starting = GetPositions((int.MinValue, int.MinValue));
 
 int result = 0;
 
-//foreach (var pos in starting.positions.Where(p => p.Key.x < maxx && p.Value.Contains('>') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y > p.Key.y && g.Value is '#')))
-//{
-//    var obstacle = (pos.Key.x + 1, pos.Key.y);
-//    var test = GetPositions(obstacle);
-//    //Console.WriteLine(new { pos.Key, dir = '>', test.looping });
-//    if (test.looping)
-//    {
-//        result++;
-//        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
-//    }
-//}
+foreach (var pos in starting.positions.Where(p => p.Key.x < maxx && p.Value.Contains('>') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y > p.Key.y && g.Value is '#')))
+{
+    var obstacle = (pos.Key.x + 1, pos.Key.y);
+    var test = GetPositions(obstacle);
+    //Console.WriteLine(new { pos.Key, dir = '>', test.looping });
+    if (test.looping)
+    {
+        result++;
+        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+    }
+}
 
-//foreach (var pos in starting.positions.Where(p => p.Key.x > 0 && p.Value.Contains('<') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y < p.Key.y && g.Value is '#')))
-//{
-//    var obstacle = (pos.Key.x - 1, pos.Key.y);
-//    var test = GetPositions(obstacle);
-//    //Console.WriteLine(new { pos.Key, dir = '<', test.looping });
-//    if (test.looping)
-//    {
-//        result++;
-//        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
-//    }
-//}
+foreach (var pos in starting.positions.Where(p => p.Key.x > 0 && p.Value.Contains('<') && grid.Any(g => g.Key.x == p.Key.x && g.Key.y < p.Key.y && g.Value is '#')))
+{
+    var obstacle = (pos.Key.x - 1, pos.Key.y);
+    var test = GetPositions(obstacle);
+    //Console.WriteLine(new { pos.Key, dir = '<', test.looping });
+    if (test.looping)
+    {
+        result++;
+        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+    }
+}
 
-//foreach (var pos in starting.positions.Where(p => p.Key.y < maxy && p.Value.Contains('v') && grid.Any(g => g.Key.x < p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
-//{
-//    var obstacle = (pos.Key.x, pos.Key.y + 1);
-//    var test = GetPositions(obstacle);
-//    //Console.WriteLine(new { pos.Key, dir = 'v', test.looping });
-//    if (test.looping)
-//    {
-//        result++;
-//        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
-//    }
-//}
+foreach (var pos in starting.positions.Where(p => p.Key.y < maxy && p.Value.Contains('v') && grid.Any(g => g.Key.x < p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
+{
+    var obstacle = (pos.Key.x, pos.Key.y + 1);
+    var test = GetPositions(obstacle);
+    //Console.WriteLine(new { pos.Key, dir = 'v', test.looping });
+    if (test.looping)
+    {
+        result++;
+        if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+    }
+}
 
-//foreach (var pos in starting.positions.Where(p => p.Key.y > 0 && p.Value.Contains('^') && grid.Any(g => g.Key.x > p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
-//{
-//    var obstacle = (pos.Key.x, pos.Key.y - 1);
-//    Console.WriteLine(new { pos.Key, dir = 'v'});
-//    var test = GetPositions(obstacle);
-//    Console.WriteLine(new { pos.Key, dir = '^', test.looping });
-//    if (test.looping)
-//    {
-//        result++;
-//        //if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
-//    }
-//}
-
-var obstacle = (11, 69);
-var test = GetPositions(obstacle);
-PrintPositions(test.positions, obstacle);
-//Console.WriteLine(new { pos.Key, dir = '^', test.looping });
+foreach (var pos in starting.positions.Where(p => p.Key.y > 0 && p.Value.Contains('^') && grid.Any(g => g.Key.x > p.Key.x && g.Key.y == p.Key.y && g.Value is '#')))
+{
+    var obstacle = (pos.Key.x, pos.Key.y - 1);
+    var test = GetPositions(obstacle);
+    //Console.WriteLine(new { pos.Key, dir = '^', test.looping });
+    if (test.looping)
+    {
+        result++;
+        if (Debugger.IsAttached) PrintPositions(test.positions, obstacle);
+    }
+}
 
 Console.WriteLine(new { result });
 
@@ -76,12 +68,19 @@ Console.WriteLine(new { result });
 
     while (true)
     {
-        if (positions.TryGetValue(pos, out var d) && d.Contains(dir)) { looping = true; break; }
         var next = GetNext(pos, dir);
         var path = grid.TryGetValue(next, out char c) && c is '#' || next == obstacle ? '+' : dir;
         if (positions.TryGetValue(pos, out var p))
         {
-            if (!p.Contains(path)) p.Add(path);
+            if (p.Contains(path)) 
+            { 
+                looping = true; 
+                break;
+            }
+            else
+            {
+                p.Add(path);
+            }
         }
         else
         {
@@ -131,3 +130,5 @@ static (int x, int y) GetNext((int x, int y) pos, char dir)
         _ => throw new InvalidOperationException()
     };
 }
+
+// 2258 is too high
