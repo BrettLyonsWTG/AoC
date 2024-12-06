@@ -1,6 +1,5 @@
 ﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
-
 var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (x, y, c))).ToDictionary(g => (g.x, g.y), g => g.c);
 var maxx = grid.Keys.Max(g => g.x);
 var maxy = grid.Keys.Max(g => g.y);
