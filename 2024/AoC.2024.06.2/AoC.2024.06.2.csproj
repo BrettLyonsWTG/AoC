@@ -8,12 +8,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Program - Copy.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Program - Copy.cs" />
-  </ItemGroup>
-
 </Project>
