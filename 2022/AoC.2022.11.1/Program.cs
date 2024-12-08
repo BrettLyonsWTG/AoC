@@ -1,108 +1,70 @@
-﻿var file = Debugger.IsAttached ? "input.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
-var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(p => p.p, p => p.c);
+List<(Queue<int> items, char oprtr, int oprnd, int test, int iftrue, int iffalse)> monkeys = new();
 
-var start = grid.Single(p => p.Value == 'S').Key;
-var end = grid.Single(p => p.Value == 'E').Key;
-grid[start] = 'a';
-grid[end] = 'z';
-var maxx = grid.Max(p => p.Key.x);
-var maxy = grid.Max(p => p.Key.y);
-
-var paths = new Dictionary<(int x, int y), List<(int x, int y)>> { [start] = [start] };
-var work = new List<(int x, int y)> { start };
-
-var reported = 0;
-
-while (work.Count > 0)
+using var reader = new StreamReader(file);
+string? line;
+while((line = reader.ReadLine()) != null)
 {
-    var cur = work.OrderBy(w => Math.Abs(end.x - w.x) + Math.Abs(end.y - w.y)).ThenByDescending(w => grid[w]).First();
-    work.Remove(cur);
-    var path = paths[cur];
+    if (!line.StartsWith("Monkey")) break;
+    line = reader.ReadLine()!;
+    var items = new Queue<int>(line[18..].Split(", ").Select(int.Parse));
+    line = reader.ReadLine()!;
+    var oprtr = line[25..] is "old" && line[23] is '*' ? '^' : line[23];
+    var oprnd = line[25..] is "old" && oprtr is '^' ? 2 : int.Parse(line[25..]);
+    line = reader.ReadLine()!;
+    var test = int.Parse(line[21..]);
+    line = reader.ReadLine()!;
+    var iftrue = int.Parse(line[29..]);
+    line = reader.ReadLine()!;
+    var iffalse = int.Parse(line[30..]);
+    line = reader.ReadLine()!;
+    monkeys.Add((items, oprtr, oprnd, test, iftrue, iffalse));
+}
 
-    var nexts = new (int x, int y)[] { (cur.x + 1, cur.y), (cur.x - 1, cur.y), (cur.x, cur.y + 1), (cur.x, cur.y - 1) }
-        .Except(paths[cur])
-        .Where(n => n.x >= 0 && n.x <= maxx && n.y >= 0 && n.y <= maxy && grid[(n.x, n.y)] - grid[cur] <= 1)
-        .ToList();
+var inspections = new int[monkeys.Count];
 
-    foreach (var next in nexts)
+for (int i = 1; i <= 20; i++)
+{
+    Console.WriteLine($"Round {i}:");
+    for (int j = 0; j < monkeys.Count; j++)
     {
-        if (paths.TryGetValue(next, out var prev))
+        //if (Debugger.IsAttached) Console.WriteLine($"Monkey {j}:");
+        while (monkeys[j].items.Count > 0)
         {
-            if (path.Count < prev.Count)
+            var item = monkeys[j].items.Dequeue();
+            //if (Debugger.IsAttached) Console.WriteLine($"  Monkey inspects an item with a worry level of {item}.");
+            inspections[j]++;
+            var worry = monkeys[j].oprtr switch
             {
-                prev.Clear();
-                prev.AddRange(path);
-                prev.Add(next);
-                if (next != end)
-                {
-                    work.Add(next);
-                    //if (prev.Count > reported)
-                    {
-                        reported = prev.Count;
-                        PrintPath(prev);
-                        Console.ReadKey(true);
-                    }
-                }
-            }
+                '+' => item + monkeys[j].oprnd,
+                '*' => item * monkeys[j].oprnd,
+                '^' => (int)Math.Pow(item, monkeys[j].oprnd),
+                _ => throw new NotImplementedException()
+            };
+            //if (Debugger.IsAttached) Console.WriteLine($"    Worry level {(monkeys[j].oprtr is '+' ? "increases by" : "is multiplied by")} {(monkeys[j].oprtr is '^' ? "itself" : monkeys[j].oprnd.ToString())} to {worry}.");
+            worry /= 3;
+            //if (Debugger.IsAttached) Console.WriteLine($"    Monkey gets bored with item. Worry level is divided by 3 to {worry}.");
+            var divisible = worry % monkeys[j].test == 0;
+            //if (Debugger.IsAttached) Console.WriteLine($"    Current worry level is{(result ? " " : " not ")}divisible by {monkeys[j].test}.");
+            var recipient = divisible ? monkeys[j].iftrue : monkeys[j].iffalse;
+            //if (Debugger.IsAttached) Console.WriteLine($"    Item with worry level 500 is thrown to monkey 3.");
+            monkeys[recipient].items.Enqueue(worry);
         }
-        else
-        {
-            paths[next] = new List<(int x, int y)>(path) { next };
-            if (next != end)
-            {
-                work.Add(next);
-                //if (paths[next].Count > reported)
-                {
-                    reported = paths[next].Count;
-                    PrintPath(paths[next]);
-                    Console.ReadKey(true);
-                }
-            }
-        }
+    }
+
+    for (int m = 0; m < monkeys.Count; m++)
+    {
+        Console.WriteLine($"  Monkey {m}: {string.Join(", ", monkeys[m].items)}");
     }
 }
 
-PrintPath(paths[end]);
-
-Console.WriteLine(paths[end].Count - 1);
-
-void PrintPath(List<(int x, int y)> path)
+for (int i = 0; i < inspections.Length; i++)
 {
-    var defaultColor = Console.ForegroundColor;
-
-    for (var y = 0; y <= maxy; y++)
-    {
-        for (var x = 0; x <= maxx; x++)
-        {
-            var p = (x, y);
-            if (path.Contains(p))
-            {
-                if (p == path.Last())
-                    Console.Write('*');
-                else
-                {
-                    var n = path[path.IndexOf(p) + 1];
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write((n.x - p.x, n.y - p.y) switch
-                    {
-                        (1, 0) => '>',
-                        (-1, 0) => '<',
-                        (0, 1) => 'v',
-                        (0, -1) => '^',
-                        _ => throw new InvalidOperationException()
-                    });
-                }
-            }
-            else
-            {
-                if (paths.ContainsKey(p)) Console.ForegroundColor = ConsoleColor.Green;
-                else if (work.Contains(p)) Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(grid[p]);
-            }
-            Console.ForegroundColor = defaultColor;
-        }
-        Console.WriteLine();
-    }
-    Console.WriteLine();
+    Console.WriteLine($"Monkey {i} inspected items {inspections[i]} times.");
 }
+
+var results = inspections.OrderDescending().ToArray();
+var result = results[0] * results[1];
+
+Console.WriteLine(new { result });
