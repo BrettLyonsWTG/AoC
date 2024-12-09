@@ -11,10 +11,11 @@ HashSet<(int x, int y)> antinodes = new();
 
 foreach (var f in frequencies)
 {
+    Console.WriteLine(new { f.Key, f.Value.Count });
     var antenna = f.Value.OrderBy(a => a.y).ThenBy(a => a.x).ToList();
     for (var a = 0; a < antenna.Count - 1; a++)
     {
-        for (var b = 1; b < antenna.Count; b++)
+        for (var b = a + 1; b < antenna.Count; b++)
         {
             var distx = antenna[b].x - antenna[a].x;
             var disty = antenna[b].y - antenna[a].y;
