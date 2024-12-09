@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var map = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(g => g.p, g => g.c);
 var maxx = map.Keys.Max(p => p.x);

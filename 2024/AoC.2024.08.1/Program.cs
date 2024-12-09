@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var map = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(g => g.p, g => g.c);
 var maxx = map.Keys.Max(p => p.x);
@@ -19,10 +17,10 @@ foreach (var f in frequencies)
         {
             var distx = antenna[b].x - antenna[a].x;
             var disty = antenna[b].y - antenna[a].y;
-            foreach (var add in new (int x, int y)[] 
-            { 
-                (antenna[a].x - distx, antenna[a].y - disty), 
-                (antenna[b].x + distx, antenna[b].y + disty) 
+            foreach (var add in new (int x, int y)[]
+            {
+                (antenna[a].x - distx, antenna[a].y - disty),
+                (antenna[b].x + distx, antenna[b].y + disty)
             }
                 .Where(a => a.x >= 0 && a.x <= maxx && a.y >= 0 & a.y <= maxy))
             {
