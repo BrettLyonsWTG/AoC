@@ -18,12 +18,6 @@ for (var i = 0; i < start.Length; i++)
     }
 }
 
-//for (int i = 0; i < disk.Count; i++)
-//{
-//    Console.Write(disk[i] is long id ? (char)(id % 10 + '0') : '.');
-//}
-//Console.WriteLine();
-
 var free = 0;
 for (var i = disk.Count - 1; i >= 0; i--)
 {
@@ -34,12 +28,6 @@ for (var i = disk.Count - 1; i >= 0; i--)
         break;
     disk[free] = disk[i];
     disk[i] = null;
-
-    //for (int p = 0; p < disk.Count; p++)
-    //{
-    //    Console.Write(disk[p] is long d ? (char)(d % 10 + '0') : '.');
-    //}
-    //Console.WriteLine();
 }
 
 for (int p = 0; p < disk.Count; p++)
