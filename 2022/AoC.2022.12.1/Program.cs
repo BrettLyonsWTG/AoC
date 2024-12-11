@@ -16,7 +16,7 @@ var reported = 0;
 
 while (work.Count > 0)
 {
-    var cur = work.OrderBy(w => Math.Abs(end.x - w.x) + Math.Abs(end.y - w.y)).ThenByDescending(w => grid[w]).First();
+    var cur = work.OrderByDescending(w => grid[w]).ThenBy(w => Math.Abs(end.x - w.x) + Math.Abs(end.y - w.y)).First();
     work.Remove(cur);
     var path = paths[cur];
 
