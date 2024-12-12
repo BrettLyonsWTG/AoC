@@ -1,4 +1,4 @@
-﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "input.txt" : "input.txt";
 
 var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(p => p.p, p => p.c);
 
