@@ -2,10 +2,9 @@
 
 var grid = File.ReadLines(file).SelectMany((l, y) => l.Select((c, x) => (p: (x, y), c))).ToDictionary(p => p.p, p => p.c);
 
-var start = grid.Single(p => p.Value == 'S').Key;
-var end = grid.Single(p => p.Value == 'E').Key;
-grid[start] = 'a';
-grid[end] = 'z';
+var start = grid.Single(p => p.Value is 'E').Key;
+var ends = grid.Where(p => p.Value is 'S' or 'a').Select(g => g.Key).ToArray();
+grid[start] = 'z';
 var maxx = grid.Max(p => p.Key.x);
 var maxy = grid.Max(p => p.Key.y);
 
@@ -17,19 +16,18 @@ var spots = new (int x, int y)[] { start };
 while (true)
 {
     dones.AddRange(spots);
-
     var nexts = spots.SelectMany(s => 
         new (int x, int y)[] { (s.x + 1, s.y), (s.x - 1, s.y), (s.x, s.y + 1), (s.x, s.y - 1) }
             .Where(p => p.x >= 0 && p.y >= 0 && p.x <= maxx && p.y <= maxy)
-            .Except(dones).Where(p => grid[p] - grid[s] <= 1)
+            .Except(dones).Where(p => grid[p] - grid[s] >= -1)
             .Select(p => (from: s, to: p)))
-        .ToArray();
+        .Distinct().ToArray();
     moves.AddRange(nexts);
 
     spots = nexts.Select(n => n.to).Distinct().ToArray();
     steps++;
 
-    if (spots.Contains(end))
+    if (spots.Intersect(ends).Any())
     {
         dones.AddRange(spots);
         break;
@@ -37,7 +35,7 @@ while (true)
 }
 
 var path = new List<(int x, int y)>();
-var current = end;
+var current = spots.Intersect(ends).First();
 while (current != start)
 {
     path.Add(current);
@@ -57,7 +55,7 @@ void PrintPath(List<(int x, int y)> dones, List<(int x, int y)> path)
         {
             var p = (x, y);
             if (path.Contains(p)) Console.ForegroundColor = ConsoleColor.Red;
-            else if (dones.Contains(p)) Console.ForegroundColor = ConsoleColor.Yellow;
+            else if (dones.Contains(p)) Console.ForegroundColor = ConsoleColor.Green;
             Console.Write(grid[p]);
             Console.ForegroundColor = defaultColor;
         }
