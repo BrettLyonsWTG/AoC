@@ -8,9 +8,9 @@ var updates = lines[(middle + 1)..].Select(l => l.Split(',').Select(int.Parse).T
 var result = updates.Where(u =>
 {
     bool updated = false;
-	for (int a = 0; a < u.Count - 1; a++)
-	{
-		for (int b = a + 1; b < u.Count; b++)
+    for (int a = 0; a < u.Count - 1; a++)
+    {
+        for (int b = a + 1; b < u.Count; b++)
         {
             if (rules.Contains((u[b], u[a])))
             {
@@ -22,7 +22,7 @@ var result = updates.Where(u =>
         }
     }
     if (updated) Console.WriteLine(string.Join(',', u));
-	return updated;
+    return updated;
 }).Sum(u => u[(u.Count - 1) / 2]);
 
 Console.WriteLine(new { result });

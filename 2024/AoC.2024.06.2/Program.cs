@@ -54,7 +54,7 @@ Console.WriteLine(new { result });
                     '╠' => ((pos.pos.x + 1, pos.pos.y), '>'),
                     '╣' => ((pos.pos.x - 1, pos.pos.y), '<'),
                     _ => throw new InvalidOperationException()
-                };  
+                };
             }
             else
             {

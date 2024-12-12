@@ -9,37 +9,37 @@ var dir = '^';
 
 while (true)
 {
-	var next = GetNext(pos, dir);
-	if (next.x < 0 || next.x > maxx || next.y < 0 || next.y > maxy)
-		break;
-	if (grid[next] is '#')
-	{
-		dir = dir switch
-		{
-			'^' => '>',
-			'>' => 'v',
-			'v' => '<',
-			'<' => '^',
-			_ => throw new InvalidOperationException()
-		};
-		next = GetNext(pos, dir);
-		if (next.x < 0 || next.x > maxx || next.y < 0 || next.y > maxy)
-			break;
-	}
-	pos = next;
-	positions.Add(pos);
+    var next = GetNext(pos, dir);
+    if (next.x < 0 || next.x > maxx || next.y < 0 || next.y > maxy)
+        break;
+    if (grid[next] is '#')
+    {
+        dir = dir switch
+        {
+            '^' => '>',
+            '>' => 'v',
+            'v' => '<',
+            '<' => '^',
+            _ => throw new InvalidOperationException()
+        };
+        next = GetNext(pos, dir);
+        if (next.x < 0 || next.x > maxx || next.y < 0 || next.y > maxy)
+            break;
+    }
+    pos = next;
+    positions.Add(pos);
 }
 
 Console.WriteLine(new { result = positions.Count });
 
 static (int x, int y) GetNext((int x, int y) pos, char dir)
 {
-	return dir switch
-	{
-		'^' => (pos.x, pos.y - 1),
-		'>' => (pos.x + 1, pos.y),
-		'v' => (pos.x, pos.y + 1),
-		'<' => (pos.x - 1, pos.y),
-		_ => throw new InvalidOperationException()
-	};
+    return dir switch
+    {
+        '^' => (pos.x, pos.y - 1),
+        '>' => (pos.x + 1, pos.y),
+        'v' => (pos.x, pos.y + 1),
+        '<' => (pos.x - 1, pos.y),
+        _ => throw new InvalidOperationException()
+    };
 }
