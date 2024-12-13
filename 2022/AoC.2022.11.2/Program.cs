@@ -4,7 +4,7 @@ List<(Queue<ulong> items, char oprtr, ulong oprnd, ulong test, int iftrue, int i
 
 using var reader = new StreamReader(file);
 string? line;
-while((line = reader.ReadLine()) != null)
+while ((line = reader.ReadLine()) != null)
 {
     if (!line.StartsWith("Monkey")) break;
     line = reader.ReadLine()!;
@@ -21,6 +21,10 @@ while((line = reader.ReadLine()) != null)
     line = reader.ReadLine()!;
     monkeys.Add((items, oprtr, oprnd, test, iftrue, iffalse));
 }
+
+var divisor = lcm(monkeys.Select(m => m.test));
+static ulong lcm(IEnumerable<ulong> numbers) => numbers.Aggregate((a, s) => a * s / gcd(a, s));
+static ulong gcd(ulong n1, ulong n2) => n2 == 0 ? n1 : gcd(n2, n1 % n2);
 
 var inspections = new ulong[monkeys.Count];
 
@@ -41,6 +45,7 @@ for (int i = 1; i <= 10000; i++)
             };
             var divisible = worry % monkeys[j].test == 0;
             var recipient = divisible ? monkeys[j].iftrue : monkeys[j].iffalse;
+            worry %= divisor;
             monkeys[recipient].items.Enqueue(worry);
         }
     }
@@ -54,3 +59,8 @@ for (int i = 1; i <= 10000; i++)
         }
     }
 }
+
+var results = inspections.OrderDescending().ToArray();
+var result = results[0] * results[1];
+
+Console.WriteLine(new { result });
