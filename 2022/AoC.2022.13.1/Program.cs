@@ -1,49 +1,80 @@
-﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿using ILoggerFactory logFactory = LoggerFactory.Create(builder => builder
+    .SetMinimumLevel(Debugger.IsAttached ? LogLevel.Debug : LogLevel.Information)
+    .AddSimpleConsole(options => options.SingleLine = true));
+ILogger log = logFactory.CreateLogger(typeof(Program).Assembly.GetName().Name!);
+string file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 var packets = new List<(string left, string right)>();
 for (int i = 0; i < lines.Length; i += 3) { packets.Add((lines[i], lines[i + 1])); }
 
 var result = packets.Select((p, i) =>
-    {
-        Console.WriteLine(new { i = i + 1, p.left, p.right });
-        var r = (i: i + 1, c: ComparePackets(ParsePacket(p.left), ParsePacket(p.right)) is not 1);
-        //Console.WriteLine(new { r, p.left, p.right });
-        return r;
-    })
-    .Where(p => p.c).Sum(p => p.i);
+{
+    var left = ParsePacket(p.left);
+    var right = ParsePacket(p.right);
+    log.LogDebug("== Pair {i} ==", i);
+    log.LogDebug("- Compare {left}", p.left);
+    log.LogDebug("       vs {right}", p.right);
+    var r = (i: i + 1, c: ComparePackets(left, right) is not 1);
+    log.LogDebug("");
+    return r;
+})
+.Where(p => p.c).Sum(p => p.i);
 
-Console.WriteLine(new { result });
+log.LogInformation("The sum of these indices is {result}.", result);
 
-int ComparePackets(PacketData left, PacketData right)
+int ComparePackets(PacketData left, PacketData right, int indent = 0)
 {
     int result = 0;
 
+    if (indent > 0)
+        log.LogDebug("{indent}- Compare {left} vs {right}", new string(' ', indent), left, right);
     if (left.Value.HasValue && right.Value.HasValue)
+    {
         result = Comparer<int>.Default.Compare(left.Value.Value, right.Value.Value);
+        if (result is -1)
+            log.LogDebug("{indent}- Left side is smaller, so inputs are in the right order", new string(' ', indent + 2));
+        else if (result is 1)
+            log.LogDebug("{indent}- Right side is smaller, so inputs are not in the right order", new string(' ', indent + 2));
+    }
+    else if (left.Value.HasValue)
+    {
+        log.LogDebug("{indent}- Mixed types; convert left to [{left}] and retry comparison", new string(' ', indent), left);
+        result = ComparePackets(new PacketData { List = [left] }, right, indent + 2);
+    }
+    else if (right.Value.HasValue)
+    {
+        log.LogDebug("{indent}- Mixed types; convert right to [{right}] and retry comparison", new string(' ', indent), right);
+        result = ComparePackets(left, new PacketData { List = [right] }, indent + 2);
+    }
     else
     {
-        var leftVals = left.Value.HasValue ? [left] : left.List;
-        var rigthVals = right.Value.HasValue ? [right] : right.List;
-
         int i = 0;
-        for (; i < Math.Min(leftVals.Count, rigthVals.Count); i++)
+        for (; i < Math.Min(left.List.Count, right.List.Count); i++)
         {
-            result = ComparePackets(leftVals[i], rigthVals[i]);
+            result = ComparePackets(left.List[i], right.List[i], indent + 2);
             if (result != 0)
                 break;
         }
 
         if (result == 0)
-            result = rigthVals.Count < leftVals.Count ? 1 : 0;
+        {
+            if (right.List.Count < left.List.Count)
+            {
+                result = 1;
+                log.LogDebug("{indent}- Right side ran out of items, so inputs are not in the right order", new string(' ', indent + 2));
+            }
+            else if (left.List.Count < right.List.Count)
+            {
+                result = -1;
+                log.LogDebug("{indent}- Left side ran out of items, so inputs are in the right order", new string(' ', indent + 2));
+            }
+        }
     }
-    Console.WriteLine($"  left : {left}");
-    Console.WriteLine($"  right: {right}");
-    Console.WriteLine($"       = {result}");
     return result;
 }
 
-static PacketData ParsePacket(ReadOnlySpan<char> packet)
+static PacketData ParsePacket(ReadOnlySpan<char> packet, bool sub = false)
 {
     var result = new PacketData();
 
@@ -56,8 +87,8 @@ static PacketData ParsePacket(ReadOnlySpan<char> packet)
         if (packet[result.Size] is '[')
         {
             result.Size++;
-            var subPacket = ParsePacket(packet[result.Size..]);
-            if (result.Size == 1)
+            var subPacket = ParsePacket(packet[result.Size..], true);
+            if (!sub)
             {
                 result = subPacket;
             }
@@ -94,5 +125,3 @@ class PacketData
 
     public override string ToString() => Value?.ToString() ?? $"[{string.Join(",", List)}]";
 }
-
-// 3920 is too low
