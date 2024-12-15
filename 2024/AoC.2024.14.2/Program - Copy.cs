@@ -25,7 +25,9 @@ void PrintGrid()
     Console.WriteLine();
 }
 
-for (int i = 0; i < 10404; i++)
+List<((int x, int y) p, (int x, int y) v)> prev = new();
+
+for (int i = 0; i < 10000000; i++)
 {
     for (int r = 0; r < robots.Count; r++)
     {
@@ -37,11 +39,24 @@ for (int i = 0; i < 10404; i++)
         robots[r] = (p: (nx2, ny2), robot.v);
     }
 
-    var orphans = robots.Count(r => !robots.Any(n => n.p == (r.p.x, r.p.y - 1) || n.p == (r.p.x, r.p.y + 1) || n.p == (r.p.x - 1, r.p.y) || n.p == (r.p.x + 1, r.p.y)));
-    if (orphans < 150)
+    if (robots.Count(r => r.p.x < midx && r.p.y < midy) == robots.Count(r => r.p.x > midx && r.p.y < midy)
+        && robots.Count(r => r.p.x < midx && r.p.y > midy) == robots.Count(r => r.p.x > midx && r.p.y > midy))
     {
-        PrintGrid();
-        Console.WriteLine(new { seconds = i + 1, orphans });
-        break;
+        var left = robots.Where(r => r.p.x < midx).Select(r => r.p);
+        var right = robots.Where(r => r.p.x > midx).Select(r => (maxx - 1 - r.p.x, r.p.y));
+        var symmertric = left.Intersect(right).Count();
+        if (symmertric >= 30)
+        {
+            PrintGrid();
+            Console.WriteLine(new { i, symmertric, match = robots.SequenceEqual(prev) });
+            Console.ReadLine();
+            prev = robots.ToList();
+        }
     }
 }
+
+PrintGrid();
+
+// 25274 - 14871 = 10403
+
+// 10403 is too high
