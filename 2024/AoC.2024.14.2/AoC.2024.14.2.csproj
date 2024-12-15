@@ -9,14 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Program - Copy.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Program - Copy.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="example.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
