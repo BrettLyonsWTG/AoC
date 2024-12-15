@@ -18,7 +18,9 @@ void PrintGrid()
     {
         for (int x = 0; x < maxx; x++)
         {
-            Console.Write(robots.Count(r => r.p == (x, y)) is int c && c > 0 ? c.ToString() : ".");
+            Console.ForegroundColor = robots.Any(r => r.p == (x, y)) ? ConsoleColor.Green : ConsoleColor.White;
+            Console.Write(robots.Any(r => r.p == (x, y)) ? '@' : "·");
+            Console.ForegroundColor = ConsoleColor.White;
         }
         Console.WriteLine();
     }
@@ -38,10 +40,11 @@ for (int i = 0; i < 10404; i++)
     }
 
     var orphans = robots.Count(r => !robots.Any(n => n.p == (r.p.x, r.p.y - 1) || n.p == (r.p.x, r.p.y + 1) || n.p == (r.p.x - 1, r.p.y) || n.p == (r.p.x + 1, r.p.y)));
-    if (orphans < 150)
+    if (i is 8278 or 8279 or 8280)
     {
         PrintGrid();
         Console.WriteLine(new { seconds = i + 1, orphans });
-        break;
+        if (i is 8280)
+            break;
     }
 }
