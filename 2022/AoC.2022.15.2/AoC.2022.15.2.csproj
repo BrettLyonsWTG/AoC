@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>AoC._2022._15._2</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Program - Copy %282%29.cs" />
+    <Compile Remove="Program - Copy %283%29.cs" />
+    <Compile Remove="Program - Copy.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Program - Copy (2).cs" />
+    <None Include="Program - Copy (3).cs" />
+    <None Include="Program - Copy.cs" />
+  </ItemGroup>
+
+</Project>
