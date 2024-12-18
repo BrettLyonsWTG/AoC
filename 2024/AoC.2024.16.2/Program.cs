@@ -1,4 +1,6 @@
-﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿using static System.Net.Mime.MediaTypeNames;
+
+var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var track = File.ReadLines(file)
     .SelectMany((l, y) => l.Select((c, x) => (c, p: (x, y))))
@@ -60,13 +62,8 @@ List<(((int x, int y) p, char d) key, int cost, List<((int x, int y) p, char d)>
         .ToList();
 
 var starts = new Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)>();
-var ends = new Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)>()
-{
-    [(end, '>')] = (0, [[(end, '>')]]),
-    [(end, '<')] = (0, [[(end, '<')]]),
-    [(end, '^')] = (0, [[(end, '^')]]),
-    [(end, 'v')] = (0, [[(end, 'v')]]),
-};
+Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)> ends 
+    = endqueue.ToDictionary(e => e.key, e => (e.cost,new[] { e.path }.ToList()));
 
 while (startqueue.Count > 0 || endqueue.Count > 0)
 {
@@ -74,13 +71,7 @@ while (startqueue.Count > 0 || endqueue.Count > 0)
     {
         var current = endqueue.OrderBy(e => e.cost).First();
         endqueue.Remove(current);
-        var nextpos = current.key.d switch
-        {
-            '>' => (current.key.p.x - 1, current.key.p.y),
-            '<' => (current.key.p.x + 1, current.key.p.y),
-            'v' => (current.key.p.x, current.key.p.y - 1),
-            '^' => (current.key.p.x, current.key.p.y + 1),
-        };
+
         char[] nextdirs = current.key.d switch
         {
             '>' => ['>', '^', 'v'],
@@ -89,8 +80,17 @@ while (startqueue.Count > 0 || endqueue.Count > 0)
             '^' => ['^', '<', '>'],
             _ => throw new InvalidOperationException()
         };
+
         List<(((int x, int y) p, char d) key, int cost, List<((int x, int y) p, char d)> path)> nexts =
-            nextdirs.Select(d => (p: nextpos, d, c: d == current.key.d ? 1 : 1001))
+            nextdirs
+                .Select(d => (p: d switch
+                    {
+                        '>' => (current.key.p.x - 1, current.key.p.y),
+                        '<' => (current.key.p.x + 1, current.key.p.y),
+                        'v' => (current.key.p.x, current.key.p.y - 1),
+                        '^' => (current.key.p.x, current.key.p.y + 1),
+                        _ => throw new InvalidOperationException()
+                    }, d, c: d == current.key.d ? 1 : 1001))
                 .ExceptBy(walls, n => n.p)
                 .Select(n => (key: (n.p, n.d), cost: current.cost + n.c, path: current.path.Append((n.p, n.d)).ToList()))
                 .Where(n => !ends.TryGetValue(n.key, out var p) || p.cost >= n.cost)
@@ -99,7 +99,7 @@ while (startqueue.Count > 0 || endqueue.Count > 0)
         foreach (var next in nexts)
         {
             PrintTrack(next.path);
-            Console.ReadLine();
+
             if (ends.TryGetValue(next.key, out var last))
             {
                 if (next.cost < last.cost)
