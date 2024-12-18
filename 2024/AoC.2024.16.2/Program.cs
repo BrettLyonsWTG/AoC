@@ -1,4 +1,4 @@
-﻿var file = Debugger.IsAttached ? "example2.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var track = File.ReadLines(file)
     .SelectMany((l, y) => l.Select((c, x) => (c, p: (x, y))))
@@ -29,181 +29,94 @@ void PrintTrack(List<((int, int) p, char c)> path)
     Console.WriteLine();
 }
 
-void PrintTrackBests(List<List<((int, int) p, char c)>> bests)
-{
-    var pathVals = bests.SelectMany(b => b.Select(i => i.p)).ToHashSet();
-    for (int y = 0; y <= max.y; y++)
+List<(((int x, int y) p, char d) key, int cost, List<((int x, int y) p, char d)> path)> startqueue = [((start, '>'), 0, [(start, '>')])];
+List<(((int x, int y) p, char d) key, int cost, List<((int x, int y) p, char d)> path)> endqueue
+    = new ((int x, int y) p, char d, char e, int c)[]
     {
-        for (int x = 0; x <= max.x; x++)
+        ((end.x + 1, end.y), 'v', '<', 1001),
+        ((end.x + 1, end.y), '<', '<', 1),
+        ((end.x + 1, end.y), '^', '<', 1001),
+        ((end.x - 1, end.y), 'v', '>', 1001),
+        ((end.x - 1, end.y), '>', '>', 1),
+        ((end.x - 1, end.y), '^', '>', 1001),
+        ((end.x, end.y + 1), '>', '^', 1001),
+        ((end.x, end.y + 1), '^', '^', 1),
+        ((end.x, end.y + 1), '<', '^', 1001),
+        ((end.x, end.y - 1), '>', 'v', 1001),
+        ((end.x, end.y - 1), 'v', 'v', 1),
+        ((end.x, end.y - 1), '<', 'v', 1001),
+    }.Where(e =>
+        e.p.x >= 0 && e.p.y >= 0 &&
+        e.p.x <= max.x && e.p.y <= max.y &&
+        !walls.Contains(e.p) &&
+        !walls.Contains(e.d switch
         {
-            Console.ForegroundColor = walls.Contains((x, y)) ? ConsoleColor.Yellow : pathVals.Contains((x, y)) ? ConsoleColor.DarkRed : ConsoleColor.White;
-            Console.BackgroundColor = pathVals.Contains((x, y)) ? ConsoleColor.White : ConsoleColor.Black;
-            Console.Write((x, y) == start ? 'S' : (x, y) == end ? 'E' : walls.Contains((x, y)) ? '#' : pathVals.Contains((x, y)) ? 'O' : '.');
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.BackgroundColor = ConsoleColor.Black;
-        }
-        Console.WriteLine();
-    }
-    Console.WriteLine();
-}
+            '<' => (e.p.x - 1, e.p.y),
+            '>' => (e.p.x + 1, e.p.y),
+            '^' => (e.p.x, e.p.y - 1),
+            'v' => (e.p.x, e.p.y + 1),
+            _ => e.p
+        })).Select(e => (key: (e.p, e.d), e.c, path: new[] { (end, e.e), (e.p, e.d) }.ToList()))
+        .ToList();
 
 var starts = new Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)>();
-var ends = new Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)>();
-
-var bestcost = int.MaxValue;
-var bests = new Dictionary<((int x, int y) p, char d), (List<List<((int x, int y) p, char d)>> starts, List<List<((int x, int y) p, char d)>> ends)>();
-//var beststarts = new List<List<((int x, int y) p, char d)>>();
-//var bestends = new List<List<((int x, int y) p, char d)>>();
-
-var counter = 0;
-
-List<(((int x, int y) p, char d) key, (int c, int cost, List<((int x, int y) p, char d)> path) value)> startqueue = [((start, '>'), (0, 0, [(start, '>')]))];
-List<(((int x, int y) p, char d) key, (int c, int cost, List<((int x, int y) p, char d)> path) value)> endqueue =
-    [
-            ((end, '>'), (0, 0, [(end, '>')])),
-            ((end, '<'), (0, 0, [(end, '<')])),
-            ((end, '^'), (0, 0, [(end, '^')])),
-            ((end, 'v'), (0, 0, [(end, 'v')]))
-    ];
+var ends = new Dictionary<((int x, int y) p, char d), (int cost, List<List<((int x, int y) p, char d)>> paths)>()
+{
+    [(end, '>')] = (0, [[(end, '>')]]),
+    [(end, '<')] = (0, [[(end, '<')]]),
+    [(end, '^')] = (0, [[(end, '^')]]),
+    [(end, 'v')] = (0, [[(end, 'v')]]),
+};
 
 while (startqueue.Count > 0 || endqueue.Count > 0)
 {
-    if (startqueue.Count > 0)
-    {
-        var curstart = startqueue.OrderBy(q => q.value.cost).First();
-        startqueue.Remove(curstart);
-        List<(((int x, int y) p, char d) key, (int c, int cost, List<((int x, int y) p, char d)> path) value)> nextstarts =
-            new[]
-            {
-            (p: (curstart.key.p.x + 1, curstart.key.p.y), d: '>' ),
-            (p: (curstart.key.p.x, curstart.key.p.y + 1), d: 'v' ),
-            (p: (curstart.key.p.x - 1, curstart.key.p.y), d: '<' ),
-            (p: (curstart.key.p.x, curstart.key.p.y - 1), d: '^' )
-            }
-            .ExceptBy(walls, n => n.p)
-            .ExceptBy(curstart.value.path.Select(p => p.p), n => n.p)
-            .Select(n => (n, path: curstart.value.path.Append(n).ToList(), c: n.d == curstart.value.path.Last().d ? 1 : 1001))
-            .Select(n => (key: n.n, value: (n.c, cost: curstart.value.cost + n.c, n.path)))
-            .Where(n => n.value.cost <= bestcost && (!starts.TryGetValue(n.key, out var p) || p.cost >= n.value.cost))
-            .ToList();
-
-        foreach (var nextstart in nextstarts.ExceptBy(ends.Keys, s => s.key))
-        {
-            var exists = starts.TryGetValue(nextstart.key, out var e);
-            if (!exists || nextstart.value.cost <= e.cost)
-            {
-                if (!exists || nextstart.value.cost < e.cost)
-                {
-                    starts[nextstart.key] = (nextstart.value.cost, [nextstart.value.path]);
-                }
-                else
-                {
-                    starts[nextstart.key].paths.Add(nextstart.value.path);
-                }
-                if (ends.ContainsKey(nextstart.key))
-                {
-                    var cost = nextstart.value.cost + ends[nextstart.key].cost;
-                    if (cost <= bestcost)
-                    {
-                        PrintTrackBests([ends[nextstart.key].paths.First(), nextstart.value.path]);
-                        Console.WriteLine(new { nextstart.key, cost });
-                        Console.ReadLine();
-
-                        if (cost < bestcost)
-                        {
-                            bestcost = cost;
-                            bests.Clear();
-                        }
-
-                        if (!bests.ContainsKey(nextstart.key))
-                        {
-                            bests[nextstart.key] = ([nextstart.value.path], ends[nextstart.key].paths);
-                        }
-                        else
-                        {
-                            bests[nextstart.key].starts.Add(nextstart.value.path);
-                        }
-                    }
-                }
-                else
-                {
-                    startqueue.Add(nextstart);
-                }
-            }
-        }
-    }
-
     if (endqueue.Count > 0)
     {
-        var curend = endqueue.OrderBy(q => q.value.cost).First();
-        endqueue.Remove(curend);
-        List<(((int x, int y) p, char d) key, (int c, int cost, List<((int x, int y) p, char d)> path) value)> nextends =
-            new[]
-            {
-            (p: (curend.key.p.x + 1, curend.key.p.y), d: '<' ),
-            (p: (curend.key.p.x, curend.key.p.y + 1), d: '^' ),
-            (p: (curend.key.p.x - 1, curend.key.p.y), d: '>' ),
-            (p: (curend.key.p.x, curend.key.p.y - 1), d: 'v' )
-            }
-            .ExceptBy(walls, n => n.p)
-            .ExceptBy(curend.value.path.Select(p => p.p), n => n.p)
-            .Select(n => (n, path: curend.value.path.Append(n).ToList(), c: n.d == curend.value.path.Last().d ? 1 : 1001))
-            .Select(n => (key: n.n, value: (n.c, cost: curend.value.cost + n.c, n.path)))
-            .Where(n => n.value.cost <= bestcost && (!ends.TryGetValue(n.key, out var p) || p.cost >= n.value.cost))
-            .ToList();
-
-        foreach (var nextend in nextends.ExceptBy(ends.Keys, s => s.key))
+        var current = endqueue.OrderBy(e => e.cost).First();
+        endqueue.Remove(current);
+        var nextpos = current.key.d switch
         {
-            var exists = ends.TryGetValue(nextend.key, out var e);
-            if (!exists || nextend.value.cost <= e.cost)
+            '>' => (current.key.p.x - 1, current.key.p.y),
+            '<' => (current.key.p.x + 1, current.key.p.y),
+            'v' => (current.key.p.x, current.key.p.y - 1),
+            '^' => (current.key.p.x, current.key.p.y + 1),
+        };
+        char[] nextdirs = current.key.d switch
+        {
+            '>' => ['>', '^', 'v'],
+            '<' => ['<', '^', 'v'],
+            'v' => ['v', '<', '>'],
+            '^' => ['^', '<', '>'],
+            _ => throw new InvalidOperationException()
+        };
+        List<(((int x, int y) p, char d) key, int cost, List<((int x, int y) p, char d)> path)> nexts =
+            nextdirs.Select(d => (p: nextpos, d, c: d == current.key.d ? 1 : 1001))
+                .ExceptBy(walls, n => n.p)
+                .Select(n => (key: (n.p, n.d), cost: current.cost + n.c, path: current.path.Append((n.p, n.d)).ToList()))
+                .Where(n => !ends.TryGetValue(n.key, out var p) || p.cost >= n.cost)
+                .ToList();
+
+        foreach (var next in nexts)
+        {
+            PrintTrack(next.path);
+            Console.ReadLine();
+            if (ends.TryGetValue(next.key, out var last))
             {
-                if (!exists || nextend.value.cost < e.cost)
+                if (next.cost < last.cost)
                 {
-                    ends[nextend.key] = (nextend.value.cost, [nextend.value.path]);
+                    last.cost = next.cost;
+                    last.paths.Clear();
                 }
-                else
-                {
-                    ends[nextend.key].paths.Add(nextend.value.path);
-                }
-                if (starts.ContainsKey(nextend.key))
-                {
-                    var cost = nextend.value.cost + starts[nextend.key].cost;
-
-                    if (cost <= bestcost)
-                    {
-                        PrintTrackBests([starts[nextend.key].paths.First(), nextend.value.path]);
-                        Console.WriteLine(new { nextend.key, cost });
-                        Console.ReadLine();
-
-                        if (cost < bestcost)
-                        {
-                            bestcost = cost;
-                            bests.Clear();
-                        }
-
-                        if (!bests.ContainsKey(nextend.key))
-                        {
-                            bests[nextend.key] = (starts[nextend.key].paths, [nextend.value.path]);
-                        }
-                        else
-                        {
-                            bests[nextend.key].starts.Add(nextend.value.path);
-                        }
-                    }
-                }
-                else
-                {
-                    endqueue.Add(nextend);
-                }
+                last.paths.Add(next.path);
+            }
+            else
+            {
+                ends[next.key] = (next.cost, [next.path]);
+            }
+            if (!starts.ContainsKey(next.key))
+            {
+                endqueue.Add((next.key, next.cost, next.path));
             }
         }
     }
 }
-
-foreach (var b in bests)
-{
-    PrintTrackBests(b.Value.starts.Concat(b.Value.ends).ToList());
-    Console.WriteLine(new { b.Key });
-}
-
-Console.WriteLine(new { bestcost });
