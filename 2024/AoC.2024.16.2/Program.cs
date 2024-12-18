@@ -1,4 +1,4 @@
-﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example2.txt" : "input.txt";
 
 var track = File.ReadLines(file)
     .SelectMany((l, y) => l.Select((c, x) => (c, p: (x, y))))
@@ -193,15 +193,25 @@ while (startqueue.Count > 0 || endqueue.Count > 0)
     }
 }
 
-var best = starts.Join(ends, s => s.Key, e => e.Key, (s, e) => (cost: s.Value.cost + e.Value.cost, s: s.Value.paths, e: e.Value.paths))
-    .OrderBy(j => j.cost).First();
+var bests = starts.Join(ends, s => s.Key, e => e.Key, (s, e) => (cost: s.Value.cost + e.Value.cost, s: s.Value.paths, e: e.Value.paths))
+    .GroupBy(j => j.cost)
+    .OrderBy(j => j.Key).First();
 
-PrintTrack(best.s.SelectMany(s => s).ToList());
-PrintTrack(best.e.SelectMany(e => e).ToList());
-Console.WriteLine(new { best.cost });
-var bestpaths = best.s.SelectMany(s => s.Select(p => p.p)).Concat(best.e.SelectMany(e => e.Select(p => p.p))).Distinct().ToList();
+foreach (var best in bests)
+{
+    PrintTrack(best.s.SelectMany(s => s).Concat(best.e.SelectMany(e => e)).ToList());
+}
+
+var bestpaths = bests.SelectMany(b => b.s.SelectMany(s => s).Select(p => p.p).Concat(b.e.SelectMany(e => e).Select(p => p.p))).Distinct().ToList();
 PrintTrack(bestpaths.Select(b => (b, 'O')).ToList());
 Console.WriteLine(new { bestpaths = bestpaths.Count() });
+
+//PrintTrack(best.s.SelectMany(s => s).ToList());
+//PrintTrack(best.e.SelectMany(e => e).ToList());
+//Console.WriteLine(new { best.cost });
+//var bestpaths = best.s.SelectMany(s => s.Select(p => p.p)).Concat(best.e.SelectMany(e => e.Select(p => p.p))).Distinct().ToList();
+//PrintTrack(bestpaths.Select(b => (b, 'O')).ToList());
+//Console.WriteLine(new { bestpaths = bestpaths.Count() });
 
 // 586 is too low
 
