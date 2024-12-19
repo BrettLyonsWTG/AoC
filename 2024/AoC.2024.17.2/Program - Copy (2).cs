@@ -1,26 +1,24 @@
-﻿var file = "input.txt";
+﻿using System.Text.RegularExpressions;
+
+var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 
-ulong rega = 0;
-ulong regb = 0;
-ulong regc = 0;
+ulong rega = ulong.Parse(lines[0][12..]);
+ulong regb = ulong.Parse(lines[1][12..]);
+ulong regc = ulong.Parse(lines[2][12..]);
 
-static uint? Invoke(uint[] ops, uint oval, ref uint inst, ref ulong rega, ref ulong regb, ref ulong regc, out string desc, bool debug = false)
+var ops = lines[4][9..].Split(',').Select(uint.Parse).ToArray();
+
+static uint? Invoke(uint[] ops, ref uint inst, ref ulong rega, ref ulong regb, ref ulong regc, out string desc, bool debug = false)
 {
-    // Program: 2,4,1,1,7,5,4,6,0,3,1,4,5,5,3,0
-
-    if (rega % 0)
-    {
-
-    }
-
     var op = ops[inst];
 
     ulong oper = op is 1 or 3 or 4
         ? ops[inst + 1]
         : ops[inst + 1] switch { var o and <= 3 => o, 4 => rega, 5 => regb, 6 => regc, _ => throw new Exception() };
 
+    uint? oval = null;
     var dval = new StringBuilder(debug ? $"[{(inst / 2) + 1,2}] " : "");
     inst += 2;
 
@@ -81,68 +79,68 @@ static uint? Invoke(uint[] ops, uint oval, ref uint inst, ref ulong rega, ref ul
     return oval;
 }
 
-rega = 112589990684262;
+rega = 1623786011503149;
+//rega = 1;
 ulong maxa = rega * 8;
 uint incr = 1024 * 1024 * 1024;
 var bestlen = 0;
-Lock lockObj = new();
 
-while (bestlen < ops.Length)
+for (int t = 1; t <= ops.Length; t++)
 {
-    Parallel.For(1, incr, (a, state) =>
+    var targetops = ops[..t];
+
+    while (bestlen < t)
     {
-        if (state.IsStopped) return;
-
-        ulong cura = rega + (ulong)a;
-        List<uint> outputs = [];
-
+        Parallel.For(1, incr, (a, state) =>
         {
-            uint intr = 0;
-            ulong rega2 = cura, regb2 = regb, regc2 = regc;
-            while (intr < ops.Length)
+            if (state.IsStopped) return;
+
+            ulong cura = rega + (ulong)a;
+            List<uint> outputs = [];
+
             {
-                var target = ops[outputs.Count];
-                var o = Invoke(ops, ref intr, ref rega2, ref regb2, ref regc2, out string desc);
-                if (o.HasValue)
+                uint intr = 0;
+                ulong rega2 = cura, regb2 = rega, regc2 = regc;
+                while (intr < ops.Length)
                 {
-                    outputs.Add(o.Value);
-                    if (o != target || outputs.Count == ops.Length)
-                        break;
+                    var target = targetops[outputs.Count];
+                    var o = Invoke(ops, ref intr, ref rega2, ref regb2, ref regc2, out string desc);
+                    if (o.HasValue)
+                    {
+                        outputs.Add(o.Value);
+                        if (o != target || outputs.Count == targetops.Length)
+                            break;
+                    }
                 }
             }
-        }
 
-        //if (outputs.Count >= bestlen )
-        if (outputs.Count > bestlen && outputs.SequenceEqual(ops[..(outputs.Count)]))
-        {
-            lock (lockObj)
+            //if (outputs.Count >= bestlen )
+            if (outputs.Count > bestlen && outputs.SequenceEqual(targetops[^(outputs.Count)..]))
             {
                 bestlen = outputs.Count;
                 uint intr = 0;
-                ulong rega2 = cura, regb2 = regb, regc2 = regc;
+                ulong rega2 = cura, regb2 = rega, regc2 = regc;
 
-                List<string> cmds = [];
-                int debugoutput = 0;
-                do
-                {
-                    if (Invoke(ops, ref intr, ref rega2, ref regb2, ref regc2, out string desc, true) is not null) debugoutput++;
-                    cmds.Add(desc);
-                } while (debugoutput < outputs.Count);
-                for (int i = 0; i < cmds.Count; i++)
-                    Console.WriteLine($"({i + 1,3}) {cmds[i]}");
+                //List<string> cmds = [];
+                //int debugoutput = 0;
+                //do
+                //{
+                //    if (Invoke(ops, ref intr, ref rega2, ref regb2, ref regc2, out string desc, true) is not null) debugoutput++;
+                //    cmds.Add(desc);
+                //} while (debugoutput < outputs.Count);
+                //for (int i = 0; i < cmds.Count; i++)
+                //    Console.WriteLine($"({i + 1,3}) {cmds[i]}");
 
                 Console.WriteLine(new { cura, rega2, regb2, regc2, intr, output = string.Join(',', outputs) });
-                Console.WriteLine();
 
-                if (outputs.Count == ops.Length)
+                if (outputs.Count == t)
                     state.Stop();
             }
-        }
-    });
-    rega += incr;
-    Console.WriteLine(rega);
+        });
+        rega += incr;
+        Console.WriteLine(new { rega });
+    }
 }
-
 
 // Program: 2,4,1,1,7,5,4,6,0,3,1,4,5,5,3,0
 

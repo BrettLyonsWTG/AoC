@@ -1,26 +1,22 @@
-﻿var file = "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 
-ulong rega = 0;
-ulong regb = 0;
-ulong regc = 0;
+ulong rega = ulong.Parse(lines[0][12..]);
+ulong regb = ulong.Parse(lines[1][12..]);
+ulong regc = ulong.Parse(lines[2][12..]);
 
-static uint? Invoke(uint[] ops, uint oval, ref uint inst, ref ulong rega, ref ulong regb, ref ulong regc, out string desc, bool debug = false)
+var ops = lines[4][9..].Split(',').Select(uint.Parse).ToArray();
+
+static uint? Invoke(uint[] ops, ref uint inst, ref ulong rega, ref ulong regb, ref ulong regc, out string desc, bool debug = false)
 {
-    // Program: 2,4,1,1,7,5,4,6,0,3,1,4,5,5,3,0
-
-    if (rega % 0)
-    {
-
-    }
-
     var op = ops[inst];
 
     ulong oper = op is 1 or 3 or 4
         ? ops[inst + 1]
         : ops[inst + 1] switch { var o and <= 3 => o, 4 => rega, 5 => regb, 6 => regc, _ => throw new Exception() };
 
+    uint? oval = null;
     var dval = new StringBuilder(debug ? $"[{(inst / 2) + 1,2}] " : "");
     inst += 2;
 
@@ -81,7 +77,7 @@ static uint? Invoke(uint[] ops, uint oval, ref uint inst, ref ulong rega, ref ul
     return oval;
 }
 
-rega = 112589990684262;
+rega = 1;
 ulong maxa = rega * 8;
 uint incr = 1024 * 1024 * 1024;
 var bestlen = 0;
