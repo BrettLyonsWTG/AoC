@@ -14,6 +14,8 @@
     <Compile Remove="Program - Copy %284%29.cs" />
     <Compile Remove="Program - Copy %285%29.cs" />
     <Compile Remove="Program - Copy %286%29.cs" />
+    <Compile Remove="Program - Copy %287%29.cs" />
+    <Compile Remove="Program - Copy %288%29.cs" />
     <Compile Remove="Program - Copy.cs" />
   </ItemGroup>
 
@@ -23,6 +25,8 @@
     <None Include="Program - Copy (4).cs" />
     <None Include="Program - Copy (5).cs" />
     <None Include="Program - Copy (6).cs" />
+    <None Include="Program - Copy (7).cs" />
+    <None Include="Program - Copy (8).cs" />
     <None Include="Program - Copy.cs" />
   </ItemGroup>
 

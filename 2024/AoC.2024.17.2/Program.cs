@@ -1,50 +1,72 @@
-﻿static bool Invoke(ref ulong rega, ref ulong regb, ref ulong regc, out uint outval)
+﻿var file = "input.txt";
+
+var lines = File.ReadAllLines(file);
+
+long rega = long.Parse(lines[0][12..]);
+
+var ops = lines[4][9..].Split(',').Select(int.Parse).ToArray();
+
+static int Invoke(ref long rega, out string? log, bool debug = false)
 {
-    regb = rega % 8;
-    regb ^= 1;
-    regc = (ulong)(rega / Math.Pow(2, regb));
+    var logger = debug ? new StringBuilder() : null;
+
+    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}]");
+
+    int regb = (int)(rega & 7);
+    logger?.AppendLine($"B=A&7   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    regb = regb ^ 1;
+    logger?.AppendLine($"B=B^1   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    int regc = (int)((rega >> regb) & 7);
+    logger?.AppendLine($"C=A>>B  : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb}) C=[{Convert.ToString(regc, 2).PadLeft(3, '0')}] ({regc})");
+
     regb ^= regc;
-    rega /= 8;
-    regb ^= 4;
-    outval = (uint)(regb % 8);
-    return rega is 0;
+    logger?.AppendLine($"B=B^C   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb}) C=[{Convert.ToString(regc, 2).PadLeft(3, '0')}] ({regc})");
+
+    regb = regb ^ 4;
+    logger?.AppendLine($"B=B^4   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    rega = rega >> 3;
+    logger?.AppendLine($"A=A>>3  : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb}) C=[{Convert.ToString(regc, 2).PadLeft(3, '0')}] ({regc})");
+
+    int outval = regb & 7;
+    logger?.AppendLine($"out     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) O=[{Convert.ToString(outval, 2).PadLeft(3, '0')}] ({outval})");
+
+    log = logger?.ToString();
+    return outval;
 }
 
-static void ReverseInvoke(ref ulong rega, ref ulong regb, ref ulong regc, uint outval)
+static void ReverseInvoke(ref long rega, int regb, out string? log, bool debug = false)
 {
-    regb ^= 4;
+    var logger = debug ? new StringBuilder() : null;
 
-    regb = rega % 8;
-    regb ^= regc;
+    logger?.AppendLine($"out     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) O=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
 
-    regb ^= 1;
-    regc = (ulong)(rega / Math.Pow(2, regb));
-    rega /= 8;
-    outval = (uint)(regb % 8);
+    rega = rega << 3;
+    logger?.AppendLine($"A=A<<3  : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    regb = regb ^ 4;
+    logger?.AppendLine($"B=B^4   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    var cfactor = regb ^ 1;
+    regb = (int)(rega >> cfactor ^ cfactor);
+    logger?.AppendLine($"B=B^1   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    rega = rega + regb;
+    logger?.AppendLine($"A=A+B   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+
+    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}]");
+
+    log = logger?.ToString();
 }
 
-ulong rega = 5;
-ulong regb = 0;
-ulong regc = 0;
-
-//uint[] targets = [7, 3, 0, 5, 7, 1, 4, 0, 5];
-//for (int t = targets.Length - 1; t >= 0; t--)
-//{
-//    ReverseInvoke(targets[t], ref rega, ref regb, ref regc);
-//    Console.WriteLine(new { t = targets[t], rega, regb, regc });
-//}
-
-//Console.WriteLine(new { rega });
-
-var outputs = new List<uint>();
-bool ended = false;
-rega = 28066687;
-regb = 0;
-regc = 0;
-while (!ended)
+for (int i = 0; i < 4; i++)
 {
-    ended = Invoke(ref rega, ref regb, ref regc, out uint outval);
-    Console.WriteLine(new { t = outval, rega, regb, regc });
-    outputs.Add(outval);
+    rega = i;
+    var outval = Invoke(ref rega, out string? log, true);
+    if (log != null) Console.WriteLine(log);
+
+    ReverseInvoke(ref rega, outval, out log, true);
+    if (log != null) Console.WriteLine(log);
 }
-Console.WriteLine(string.Join(',', outputs));
