@@ -10,7 +10,7 @@ static int Invoke(ref long rega, out string? log, bool debug = false)
 {
     var logger = debug ? new StringBuilder() : null;
 
-    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}]");
+    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega})");
 
     int regb = (int)(rega & 7);
     logger?.AppendLine($"B=A&7   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
@@ -49,19 +49,19 @@ static void ReverseInvoke(ref long rega, int regb, out string? log, bool debug =
     regb = regb ^ 4;
     logger?.AppendLine($"B=B^4   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
 
-    var cfactor = regb ^ 1;
-    regb = (int)(rega >> cfactor ^ cfactor);
-    logger?.AppendLine($"B=B^1   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
+    rega = rega + regb ^ 4;
+    var regc = rega + regb >> regb & 7;
+    if ()
+    logger?.AppendLine($"B=B^1   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb}) C=[{Convert.ToString(regc, 2).PadLeft(3, '0')}] ({regc})");
 
-    rega = rega + regb;
     logger?.AppendLine($"A=A+B   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
 
-    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}]");
+    logger?.AppendLine($"sta     : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega})");
 
     log = logger?.ToString();
 }
 
-for (int i = 0; i < 4; i++)
+for (int i = 8; i < 9; i++)
 {
     rega = i;
     var outval = Invoke(ref rega, out string? log, true);
