@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 
