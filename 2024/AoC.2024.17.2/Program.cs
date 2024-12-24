@@ -51,7 +51,6 @@ static void ReverseInvoke(ref long rega, int regb, out string? log, bool debug =
 
     rega = rega + regb ^ 4;
     var regc = rega + regb >> regb & 7;
-    if ()
     logger?.AppendLine($"B=B^1   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb}) C=[{Convert.ToString(regc, 2).PadLeft(3, '0')}] ({regc})");
 
     logger?.AppendLine($"A=A+B   : A=[{Convert.ToString(rega, 2).PadLeft(3, '0')}] ({rega}) B=[{Convert.ToString(regb, 2).PadLeft(3, '0')}] ({regb})");
