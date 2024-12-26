@@ -1,4 +1,8 @@
-﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿using System.Collections.Concurrent;
+using System.IO;
+using System.Security.Cryptography;
+
+var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 var map = File.ReadLines(file)
@@ -48,18 +52,30 @@ void PrintMap(List<(int, int)> path, (int, int) cut = default)
     }
 }
 
-List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y) to)
+List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y)[] to)
 {
     var doneMoves = new List<((int x, int y) from, (int x, int y) to)>();
     var current = new List<(int x, int y)> { from };
+    (int x, int y) dest = default;
     while (current.Count > 0)
     {
         ((int x, int y) from, (int x, int y) to)[] nextMoves = moves.Join(current, m => m.from, c => c, (m, _) => m)
             .Except(doneMoves)
             .ToArray();
-        doneMoves.AddRange(nextMoves);
-        if (nextMoves.Any(n => n.to == to))
+        if (nextMoves.Length == 0)
         {
+            lock (moves_lock)
+            {
+                nextMoves = current.SelectMany(c => new[] { (c.x, c.y - 1), (c.x, c.y + 1), (c.x - 1, c.y), (c.x + 1, c.y) }
+                    .Select(n => (from: c, to: n)))
+                    .ToArray();
+                moves.AddRange(nextMoves.Except(moves));
+            }
+        }
+        doneMoves.AddRange(nextMoves);
+        if (nextMoves.Select(n => n.to).Intersect(to).Any())
+        {
+            dest = nextMoves.Select(n => n.to).Intersect(to).First();
             break;
         }
         current = nextMoves.Select(n => n.to).Distinct().ToList();
@@ -72,7 +88,7 @@ List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y) to)
     {
         var pos = from;
         var path = new List<(int x, int y)>() { from };
-        while (pos != to)
+        while (pos != dest)
         {
             var next = doneMoves.First(m => m.from == pos).to;
             path.Add(next);
@@ -82,14 +98,10 @@ List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y) to)
     }
 }
 
-var fullPath = GetMoves(start, end);
-Console.WriteLine(new { full = fullPath.Count - 1, path = paths.Count - 1 });
+var fullPath = GetMoves(start, new[] { end });
+//PrintMap(fullPath);
+Console.WriteLine(fullPath.Count - 1);
 Console.WriteLine();
-
-if (!fullPath.Order().SequenceEqual(paths.Order()))
-{
-    throw new InvalidOperationException("Full path is not the same as all paths");
-}
 
 var cuts = map
     .Where(m => m.Value is '#' && m.Key.x > 1 && m.Key.x < maxx - 1 && map[(m.Key.x - 1, m.Key.y)] == '.' && map[(m.Key.x + 1, m.Key.y)] == '.')
@@ -102,26 +114,29 @@ var cuts = map
 
 var result = 0;
 
-foreach (var cut in cuts)
+Parallel.ForEach(cuts, cut =>
 {
-    var cutIn = fullPath.First(p => cut.ends.Contains(p));
-    var cutInIdx = fullPath.IndexOf(cutIn);
-    var cutOut = cut.ends.Except([cutIn]).Single();
-    var cutOutIdx = fullPath.IndexOf(cutOut);
-    var steps = cutInIdx + fullPath.Count - cutOutIdx + 1;
-    var savings = fullPath.Count - 1 - steps;
-    if (savings >= 100 || Debugger.IsAttached)
+    var startToCut = GetMoves(start, cut.ends);
+    var cutIn = startToCut.Last();
+    var cutOut = cut.ends.Except([cutIn]).First();
+    var cutToEnd = GetMoves(cutOut, [end]);
+    var path = startToCut.Append(cut.cut).Concat(cutToEnd).ToList();
+    var saving = fullPath.Count - path.Count;
+    lock (print_lock)
     {
-        result++;
-        PrintMap([.. fullPath[..(cutInIdx + 1)], cut.cut, .. fullPath[cutOutIdx..]], cut.cut);
-        Console.WriteLine(new { cut.cut, result, savings });
-        Console.WriteLine();
-        Console.ReadLine();
+        if (saving >= 100)
+        {
+            Interlocked.Increment(ref result);
+            //PrintMap(path, cut.cut);
+            Console.WriteLine(new { cut.cut, result, len = path.Count - 1, saving = fullPath.Count - path.Count });
+            //Console.WriteLine();
+            //Console.ReadLine();
+        }
+        else
+        {
+            Console.WriteLine(new { cut.cut, result });
+        }
     }
-    else
-    {
-        Console.WriteLine(new { cut.cut, result });
-    }
-}
+});
 
 Console.WriteLine(new { result });
