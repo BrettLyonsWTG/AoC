@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var lines = File.ReadAllLines(file);
 var map = File.ReadLines(file)
@@ -19,6 +17,8 @@ var maxy = map.Keys.Max(p => p.y);
 var current = new List<(int x, int y)> { start };
 var done = new List<(int x, int y)>();
 var moves = new List<((int x, int y) from, (int x, int y) to)>();
+var moves_lock = new Lock();
+var print_lock = new Lock();
 
 while (current.Count > 0)
 {
@@ -33,11 +33,10 @@ while (current.Count > 0)
     current = nexts;
 }
 
-PrintMap(done);
-Console.WriteLine();
-
 void PrintMap(List<(int, int)> path, (int, int) cut = default)
 {
+    if (cut == default) cut = (-1, -1);
+
     for (int y = 0; y <= maxy; y++)
     {
         for (int x = 0; x <= maxx; x++)
@@ -51,27 +50,18 @@ void PrintMap(List<(int, int)> path, (int, int) cut = default)
     }
 }
 
-List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y)[] to)
+List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y) to)
 {
     var doneMoves = new List<((int x, int y) from, (int x, int y) to)>();
     var current = new List<(int x, int y)> { from };
-    (int x, int y) dest = default;
     while (current.Count > 0)
     {
         ((int x, int y) from, (int x, int y) to)[] nextMoves = moves.Join(current, m => m.from, c => c, (m, _) => m)
             .Except(doneMoves)
             .ToArray();
-        if (nextMoves.Length == 0)
-        {
-            nextMoves = current.SelectMany(c => new[] { (c.x, c.y - 1), (c.x, c.y + 1), (c.x - 1, c.y), (c.x + 1, c.y) }
-                .Select(n => (from: c, to: n)))
-                .ToArray();
-            moves.AddRange(nextMoves);
-        }
         doneMoves.AddRange(nextMoves);
-        if (nextMoves.Select(n => n.to).Intersect(to).Any())
+        if (nextMoves.Any(n => n.to == to))
         {
-            dest = nextMoves.Select(n => n.to).Intersect(to).First();
             break;
         }
         current = nextMoves.Select(n => n.to).Distinct().ToList();
@@ -84,7 +74,7 @@ List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y)[] to)
     {
         var pos = from;
         var path = new List<(int x, int y)>() { from };
-        while (pos != dest)
+        while (pos != to)
         {
             var next = doneMoves.First(m => m.from == pos).to;
             path.Add(next);
@@ -94,23 +84,42 @@ List<(int x, int y)> GetMoves((int x, int y) from, (int x, int y)[] to)
     }
 }
 
-var cuts = map
-    .Where(m => m.Value is '#' && m.Key.x > 1 && m.Key.x < maxx - 1 && map[(m.Key.x - 1, m.Key.y)] == '.' && map[(m.Key.x + 1, m.Key.y)] == '.')
-    .Select(m => (cut: m.Key, ends: new[] { (m.Key.x - 1, m.Key.y), (m.Key.x + 1, m.Key.y) }))
-    .Concat(map
-    .Where(m => m.Value is '#' && m.Key.y > 1 && m.Key.y < maxy - 1 && map[(m.Key.x, m.Key.y - 1)] == '.' && map[(m.Key.x, m.Key.y + 1)] == '.')
-    .Select(m => (cut: m.Key, ends: new[] { (m.Key.x, m.Key.y - 1), (m.Key.x, m.Key.y + 1) })))
-    .ToList();
+var fullPath = GetMoves(start, end);
+Console.WriteLine(new { full = fullPath.Count - 1, path = paths.Count - 1 });
+Console.WriteLine();
 
-foreach (var cut in cuts.Take(10))
+if (!fullPath.Order().SequenceEqual(paths.Order()))
 {
-    var startToCut = GetMoves(start, cut.ends);
-    var cutIn = startToCut.Last();
-    var cutOut = cut.ends.Except([cutIn]).First();
-    var cutToEnd = GetMoves(cutOut, [end]);
-    var path = startToCut.Append(cut.cut).Concat(cutToEnd).ToList();
-    PrintMap(path, cut.cut);
-    Console.WriteLine(path.Count - 1);
-    Console.WriteLine();
-    Console.ReadLine();
+    throw new InvalidOperationException("Full path is not the same as all paths");
 }
+
+int maxcut = Debugger.IsAttached ? 20 : 20;
+int minsav = Debugger.IsAttached ? 50 : 100;
+
+var savings = fullPath.SelectMany((to, toCutIdx) =>
+{
+    Console.WriteLine($"{toCutIdx}/{fullPath.Count}");
+    return Enumerable.Range(to.y - maxcut, maxcut * 2 + 1)
+        .Where(y => y > 0 && y < maxy)
+        .SelectMany(y =>
+        {
+            var dify = maxcut - Math.Abs(to.y - y);
+            return Enumerable.Range(to.x - dify, dify * 2 + 1)
+                .Where(x => x > 0 && x < maxx)
+                .Select(x => (x, y))
+                .Select(from => new { from, fromCutIdx = fullPath.IndexOf(from) })
+                .Select(from => new { from.from, from.fromCutIdx, saving = from.fromCutIdx - toCutIdx - Math.Abs(from.from.x - to.x) - Math.Abs(from.from.y - to.y) })
+                .Where(from => from.saving >= minsav);
+        })
+        .Select(from => (to, toCutIdx, from.from, from.fromCutIdx, from.saving))
+        .OrderByDescending(s => s.saving);
+}).ToList();
+
+var grouped = savings.GroupBy(s => s.saving).Select(g => (g.Key, Count: g.Count())).OrderBy(g => g.Key).ToList();
+
+grouped.ForEach(g => Console.WriteLine($"There are {g.Count} cheats that save {g.Key} picoseconds."));
+
+Console.WriteLine(new { savings.Count });
+
+var b = savings.First();
+PrintMap(fullPath[..b.toCutIdx].Concat(fullPath[b.fromCutIdx..]).ToList(), b.to);

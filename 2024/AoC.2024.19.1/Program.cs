@@ -12,7 +12,7 @@ foreach (var design in designs)
     List<string> patterns = [""];
     while (patterns.Count > 0)
     {
-        patterns = patterns.SelectMany(p => 
+        patterns = patterns.SelectMany(p =>
             towels.Where(t => design.Substring(p.Length).StartsWith(t))
                 .Select(t => p + t)).Distinct().ToList();
 

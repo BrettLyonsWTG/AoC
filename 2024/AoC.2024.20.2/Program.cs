@@ -35,6 +35,8 @@ while (current.Count > 0)
 
 void PrintMap(List<(int, int)> path, (int, int) cut = default)
 {
+    if (cut == default) cut = (-1, -1);
+
     for (int y = 0; y <= maxy; y++)
     {
         for (int x = 0; x <= maxx; x++)
@@ -91,37 +93,33 @@ if (!fullPath.Order().SequenceEqual(paths.Order()))
     throw new InvalidOperationException("Full path is not the same as all paths");
 }
 
-var cuts = map
-    .Where(m => m.Value is '#' && m.Key.x > 1 && m.Key.x < maxx - 1 && map[(m.Key.x - 1, m.Key.y)] == '.' && map[(m.Key.x + 1, m.Key.y)] == '.')
-    .Select(m => (cut: m.Key, ends: new[] { (m.Key.x - 1, m.Key.y), (m.Key.x + 1, m.Key.y) }))
-    .Concat(map
-    .Where(m => m.Value is '#' && m.Key.y > 1 && m.Key.y < maxy - 1 && map[(m.Key.x, m.Key.y - 1)] == '.' && map[(m.Key.x, m.Key.y + 1)] == '.')
-    .Select(m => (cut: m.Key, ends: new[] { (m.Key.x, m.Key.y - 1), (m.Key.x, m.Key.y + 1) })))
-    .OrderBy(m => m.cut.y)
-    .ThenBy(m => m.cut.x);
+int maxcut = Debugger.IsAttached ? 20 : 20;
+int minsav = Debugger.IsAttached ? 50 : 100;
 
-var result = 0;
-
-foreach (var cut in cuts)
+var savings = fullPath.SelectMany((to, toCutIdx) =>
 {
-    var cutIn = fullPath.First(p => cut.ends.Contains(p));
-    var cutInIdx = fullPath.IndexOf(cutIn);
-    var cutOut = cut.ends.Except([cutIn]).Single();
-    var cutOutIdx = fullPath.IndexOf(cutOut);
-    var steps = cutInIdx + fullPath.Count - cutOutIdx + 1;
-    var savings = fullPath.Count - 1 - steps;
-    if (savings >= 100 || Debugger.IsAttached)
-    {
-        result++;
-        PrintMap([.. fullPath[..(cutInIdx + 1)], cut.cut, .. fullPath[cutOutIdx..]], cut.cut);
-        Console.WriteLine(new { cut.cut, result, savings });
-        Console.WriteLine();
-        Console.ReadLine();
-    }
-    else
-    {
-        Console.WriteLine(new { cut.cut, result });
-    }
-}
+    Console.WriteLine($"{toCutIdx}/{fullPath.Count}");
+    return Enumerable.Range(to.y - maxcut, maxcut * 2 + 1)
+        .Where(y => y > 0 && y < maxy)
+        .SelectMany(y =>
+        {
+            var dify = maxcut - Math.Abs(to.y - y);
+            return Enumerable.Range(to.x - dify, dify * 2 + 1)
+                .Where(x => x > 0 && x < maxx)
+                .Select(x => (x, y))
+                .Select(from => new { from, fromCutIdx = fullPath.IndexOf(from) })
+                .Select(from => new { from.from, from.fromCutIdx, saving = from.fromCutIdx - toCutIdx - Math.Abs(from.from.x - to.x) - Math.Abs(from.from.y - to.y) })
+                .Where(from => from.saving >= minsav);
+        })
+        .Select(from => (to, toCutIdx, from.from, from.fromCutIdx, from.saving))
+        .OrderByDescending(s => s.saving);
+}).ToList();
 
-Console.WriteLine(new { result });
+var grouped = savings.GroupBy(s => s.saving).Select(g => (g.Key, Count: g.Count())).OrderBy(g => g.Key).ToList();
+
+grouped.ForEach(g => Console.WriteLine($"There are {g.Count} cheats that save {g.Key} picoseconds."));
+
+Console.WriteLine(new { savings.Count });
+
+var b = savings.First();
+PrintMap(fullPath[..b.toCutIdx].Concat(fullPath[b.fromCutIdx..]).ToList(), b.to);

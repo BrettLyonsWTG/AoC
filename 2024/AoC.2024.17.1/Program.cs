@@ -13,7 +13,7 @@ static uint? Invoke(uint[] ops, ref uint inst, ref ulong rega, ref ulong regb, r
 {
     var op = ops[inst];
 
-    ulong oper = op is 1 or 3 or 4 
+    ulong oper = op is 1 or 3 or 4
         ? ops[inst + 1]
         : ops[inst + 1] switch { var o and <= 3 => o, 4 => rega, 5 => regb, 6 => regc, _ => throw new Exception() };
 

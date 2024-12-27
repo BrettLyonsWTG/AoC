@@ -3,10 +3,10 @@
 var lines = File.ReadAllLines(file);
 var split = Array.IndexOf(lines, "");
 
-var grid = lines[..split].SelectMany((l, y) => l.SelectMany((c, x) => new[] 
-{ 
-    (k: (x: x * 2, y), c: c is 'O' ? '[' : c), 
-    (k: (x: x * 2 + 1, y), c: c is 'O' ? ']' : c is '@' ? '.' : c) 
+var grid = lines[..split].SelectMany((l, y) => l.SelectMany((c, x) => new[]
+{
+    (k: (x: x * 2, y), c: c is 'O' ? '[' : c),
+    (k: (x: x * 2 + 1, y), c: c is 'O' ? ']' : c is '@' ? '.' : c)
 })).ToDictionary(g => g.k, g => g.c);
 
 var maxx = grid.Keys.Max(k => k.x);
@@ -62,7 +62,7 @@ foreach (var m in moves)
             if (space.Value is not default(char))
             {
                 var dir = m is '<' ? 1 : -1;
-                for (int x = space.Key.x + dir; m is '<' ? x <= robot.x : x >= robot.x ; x += dir)
+                for (int x = space.Key.x + dir; m is '<' ? x <= robot.x : x >= robot.x; x += dir)
                 {
                     grid[(x - dir, robot.y)] = grid[(x, robot.y)];
                 }
