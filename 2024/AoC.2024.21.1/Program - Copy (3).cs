@@ -2,10 +2,8 @@
 
 var codes = File.ReadAllLines(file).Select(c => (code: c, num: int.Parse(c[..3]))).ToList();
 
-List<List<string>> GetNumPresses(char button, ref (int x, int y) pos)
+List<char> GetNumPresses(char button, ref (int x, int y) pos)
 {
-    var presses = new List<List<string>>();
-
     (int x, int y) next = button switch
     {
         'A' => (2, 3),
@@ -21,64 +19,23 @@ List<List<string>> GetNumPresses(char button, ref (int x, int y) pos)
         '9' => (2, 0),
         _ => throw new InvalidOperationException()
     };
-    var presses1 = new List<char>();
-    if (next.x > pos.x) presses1.AddRange(Enumerable.Repeat('>', next.x - pos.x));
-    if (next.x < pos.x) presses1.AddRange(Enumerable.Repeat('<', pos.x - next.x));
-    if (next.y > pos.y) presses1.AddRange(Enumerable.Repeat('^', next.y - pos.y));
-    if (next.y < pos.y) presses1.AddRange(Enumerable.Repeat('v', pos.y - next.y));
+    var presses = new List<char>();
+    if (next.x > pos.x) presses.AddRange(Enumerable.Repeat('>', next.x - pos.x));
+    if (next.x < pos.x) presses.AddRange(Enumerable.Repeat('<', pos.x - next.x));
+    if (next.y > pos.y) presses.AddRange(Enumerable.Repeat('>', next.y - pos.y));
+    if (next.y < pos.y) presses.AddRange(Enumerable.Repeat('<', pos.y - next.y));
 
-    var combos = GetCombos(presses1).ToList();
-
-    foreach (var combo in combos)
-    {
-        //presses.Add([new([.. combo])]);
-        var presses1
-        foreach (var dirPresses in GetDirPresses(button, ref pos))
-        {
-            presses.Add(dirPresses.Concat(combo).ToList());
-        }
-    }
-
-    return  presses;
+    return presses;
 }
 
-List<List<char>> GetDirPresses(char button, ref (int x, int y) pos)
-{
-    var presses = new List<List<string>>();
-
-    (int x, int y) next = button switch
-    {
-        'A' => (2, 0),
-        '^' => (1, 0),
-        '<' => (0, 1),
-        'v' => (1, 1),
-        '>' => (2, 1),
-        _ => throw new InvalidOperationException()
-    };
-    var presses1 = new List<char>();
-    if (next.x > pos.x) presses1.AddRange(Enumerable.Repeat('>', next.x - pos.x));
-    if (next.x < pos.x) presses1.AddRange(Enumerable.Repeat('<', pos.x - next.x));
-    if (next.y > pos.y) presses1.AddRange(Enumerable.Repeat('^', next.y - pos.y));
-    if (next.y < pos.y) presses1.AddRange(Enumerable.Repeat('v', pos.y - next.y));
-
-    return GetCombos(presses1).ToList();
-}
-
-List<List<char>> GetCombos(List<char> input)
-{
-    var comboIds = GetComboIds(Enumerable.Range(0, input.Count), []).ToList();
-    var combos = comboIds.Select(c => c.Select(d => input[d]).ToList()).DistinctBy(c => new string([.. c])).ToList();
-    return combos;
-}
-
-IEnumerable<List<int>> GetComboIds(IEnumerable<int> input, IEnumerable<int> done)
+IEnumerable<List<char>> GetCombos(IEnumerable<char> input, IEnumerable<char> done)
 {
     bool noInput = true;
 
     foreach (var i in input)
     {
         noInput = false;
-        foreach (var combo in GetComboIds(input.Except([i]), done.Append(i)))
+        foreach (var combo in GetCombos(input.Except([i]), done.Append(i)))
         {
             yield return combo;
         }
@@ -90,18 +47,15 @@ IEnumerable<List<int>> GetComboIds(IEnumerable<int> input, IEnumerable<int> done
     }
 }
 
-var pos = (2, 3);
-var presses = GetNumPresses('7', ref pos);
-
-
+//var pos = (2, 3);
 //var presses = GetNumPresses('3', ref pos);
 
-//var combos = GetCombos(['1', '2', '3', '4'], []).ToList();
+var combos = GetCombos(['1', '2', '3', '4'], []).ToList();
 
-//foreach (var combo in combos)
-//{
-//    Console.WriteLine(string.Join(", ", combo));
-//}
+foreach (var combo in combos)
+{
+    Console.WriteLine(string.Join(", ", combo));
+}
 
 
 //long complexity = 0;
