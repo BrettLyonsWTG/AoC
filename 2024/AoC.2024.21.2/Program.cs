@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.IO.Compression;
+using Microsoft.VisualBasic;
 
 var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
@@ -77,23 +78,41 @@ IEnumerable<byte> GetDirPresses(byte button, ref (int x, int y) pos)
 long GetPresses(string code)
 {
     var pos = GetNumPos('A');
-    var presses = code.SelectMany(c => GetNumPresses(c, ref pos)).ToArray();
+    var pressesNumMem = new MemoryStream();
+    using (var pressesComp = new GZipStream(pressesNumMem, CompressionMode.Compress, true))
+    {
+        var numPresses = code.SelectMany(c => GetNumPresses(c, ref pos)).ToArray();
+        pressesComp.Write(numPresses);
+    }
+    pressesNumMem.Position = 0;
+    pressesNumMem.CopyTo(pressesMem);
+    var pressesMem = new MemoryStream();
+    pressesMem.Position = 0;
 
-    for (int i = 0; i < 25; i++)
+    long presses = 0;
+    for (int i = 0; i < 2; i++)
     {
         GC.Collect();
         pos = GetDirPos((byte)DirPad.Enter);
-        using var mem = new MemoryStream();
-        foreach (var press in presses)
+        presses = 0;
+        var pressesNext = new MemoryStream();
+        using var pressesComp = new GZipStream(pressesNext, CompressionMode.Compress);
+        using var pressesDecomp = new GZipStream(pressesMem, CompressionMode.Decompress);
+        while (pressesDecomp.ReadByte() is var b and >= 0)
         {
-            var dirPresses = GetDirPresses(press, ref pos);
-            mem.Write(dirPresses.ToArray());
+            var dirPresses = GetDirPresses((byte)b, ref pos).ToArray();
+            pressesComp.Write(dirPresses);
+            presses += dirPresses.Length;
         }
-        presses = mem.ToArray();
-        Console.WriteLine($"{code}: {i + 1}={presses.Count()}");
+        pressesComp.Flush();
+        pressesComp.Dispose();
+        pressesDecomp.Dispose();
+        pressesMem.Dispose();
+        pressesMem = pressesNext;
+        Console.WriteLine($"{code}: {i + 1}={presses}");
     }
 
-    return presses.LongLength;
+    return presses;
 }
 
 long total = 0;
