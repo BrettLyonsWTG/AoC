@@ -1,7 +1,4 @@
-﻿using System.IO.Compression;
-using Microsoft.VisualBasic;
-
-var file = Debugger.IsAttached ? "example.txt" : "input.txt";
+﻿var file = Debugger.IsAttached ? "example.txt" : "input.txt";
 
 var codes = File.ReadAllLines(file).Select(c => (code: c, num: int.Parse(c[..3]))).ToList();
 
@@ -21,98 +18,82 @@ static (int x, int y) GetNumPos(char button) => button switch
     _ => throw new InvalidOperationException()
 };
 
-static (int x, int y) GetDirPos(byte button) => (DirPad)button switch
+static (int x, int y) GetDirPos(char button) => button switch
 {
-    DirPad.Enter => (2, 0),
-    DirPad.Up => (1, 0),
-    DirPad.Left => (0, 1),
-    DirPad.Down => (1, 1),
-    DirPad.Right => (2, 1),
+    'A' => (2, 0),
+    '^' => (1, 0),
+    '<' => (0, 1),
+    'v' => (1, 1),
+    '>' => (2, 1),
     _ => throw new InvalidOperationException()
 };
 
-static IEnumerable<byte> GetNumPresses(char button, ref (int x, int y) pos)
+static IEnumerable<char> GetNumPresses(char button, ref (int x, int y) pos)
 {
     var next = GetNumPos(button);
 
-    var presses = Enumerable.Empty<byte>();
+    var presses = Enumerable.Empty<char>();
 
     if (pos.y == 3 && next.x == 0)
     {
-        presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Up, pos.y - next.y));
-        presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Left, pos.x - next.x));
+        presses = presses.Concat(Enumerable.Repeat('^', pos.y - next.y));
+        presses = presses.Concat(Enumerable.Repeat('<', pos.x - next.x));
     }
     else if (pos.x == 0 && next.y == 3)
     {
-        presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Right, next.x - pos.x));
-        presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Down, next.y - pos.y));
+        presses = presses.Concat(Enumerable.Repeat('>', next.x - pos.x));
+        presses = presses.Concat(Enumerable.Repeat('v', next.y - pos.y));
     }
     else
     {
-        if (next.x < pos.x) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Left, pos.x - next.x));
-        if (next.y < pos.y) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Up, pos.y - next.y));
-        if (next.y > pos.y) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Down, next.y - pos.y));
-        if (next.x > pos.x) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Right, next.x - pos.x));
+        if (next.x < pos.x) presses = presses.Concat(Enumerable.Repeat('<', pos.x - next.x));
+        if (next.y < pos.y) presses = presses.Concat(Enumerable.Repeat('^', pos.y - next.y));
+        if (next.y > pos.y) presses = presses.Concat(Enumerable.Repeat('v', next.y - pos.y));
+        if (next.x > pos.x) presses = presses.Concat(Enumerable.Repeat('>', next.x - pos.x));
     }
-    presses = presses.Append((byte)DirPad.Enter);
+    presses = presses.Append('A');
 
     pos = next;
     return presses;
 }
 
-IEnumerable<byte> GetDirPresses(byte button, ref (int x, int y) pos)
+IEnumerable<char> GetDirPresses(char from, char to)
 {
-    var next = GetDirPos(button);
+    var pos = GetDirPos(from);
+    var next = GetDirPos(to);
 
-    var presses = Enumerable.Empty<byte>();
-    if (next.y > pos.y) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Down, next.y - pos.y));
-    if (next.x < pos.x) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Left, pos.x - next.x));
-    if (next.x > pos.x) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Right, next.x - pos.x));
-    if (next.y < pos.y) presses = presses.Concat(Enumerable.Repeat((byte)DirPad.Up, pos.y - next.y));
-    presses = presses.Append((byte)DirPad.Enter);
+    var presses = Enumerable.Empty<char>();
+    if (next.y > pos.y) presses = presses.Concat(Enumerable.Repeat('v', next.y - pos.y));
+    if (next.x < pos.x) presses = presses.Concat(Enumerable.Repeat('<', pos.x - next.x));
+    if (next.x > pos.x) presses = presses.Concat(Enumerable.Repeat('>', next.x - pos.x));
+    if (next.y < pos.y) presses = presses.Concat(Enumerable.Repeat('^', pos.y - next.y));
 
-    pos = next;
     return presses;
 }
 
 long GetPresses(string code)
 {
     var pos = GetNumPos('A');
-    var pressesNumMem = new MemoryStream();
-    using (var pressesComp = new GZipStream(pressesNumMem, CompressionMode.Compress, true))
-    {
-        var numPresses = code.SelectMany(c => GetNumPresses(c, ref pos)).ToArray();
-        pressesComp.Write(numPresses);
-    }
-    pressesNumMem.Position = 0;
-    pressesNumMem.CopyTo(pressesMem);
-    var pressesMem = new MemoryStream();
-    pressesMem.Position = 0;
+    var presses = code.SelectMany(c => GetNumPresses(c, ref pos)).ToArray();
+    Console.WriteLine($"{code}: {new string(presses)}");
 
-    long presses = 0;
     for (int i = 0; i < 2; i++)
     {
-        GC.Collect();
-        pos = GetDirPos((byte)DirPad.Enter);
-        presses = 0;
-        var pressesNext = new MemoryStream();
-        using var pressesComp = new GZipStream(pressesNext, CompressionMode.Compress);
-        using var pressesDecomp = new GZipStream(pressesMem, CompressionMode.Decompress);
-        while (pressesDecomp.ReadByte() is var b and >= 0)
+        var last = 'A';
+        presses = presses.SelectMany(c =>
         {
-            var dirPresses = GetDirPresses((byte)b, ref pos).ToArray();
-            pressesComp.Write(dirPresses);
-            presses += dirPresses.Length;
-        }
-        pressesComp.Flush();
-        pressesComp.Dispose();
-        pressesDecomp.Dispose();
-        pressesMem.Dispose();
-        pressesMem = pressesNext;
-        Console.WriteLine($"{code}: {i + 1}={presses}");
+            var nextPresses = Enumerable.Empty<char>();
+            if (last != c)
+            {
+                nextPresses = GetDirPresses(last, c);
+                last = c;
+            }
+            return nextPresses.Append('A');
+        }).ToArray();
+        Console.WriteLine($"{code}: {i + 1}={new string(presses)}");
     }
 
-    return presses;
+    return presses.LongLength;
 }
 
 long total = 0;
