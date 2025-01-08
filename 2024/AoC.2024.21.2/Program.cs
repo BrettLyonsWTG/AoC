@@ -104,14 +104,28 @@ foreach (var line in File.ReadLines(file))
     Console.WriteLine($"{line}: {presses}");
     total += presses * num;
 }
-
 Console.WriteLine(total);
 
-enum DirPad : byte
+void GetDirPressesComp(string code)
 {
-    Enter = 0,
-    Left = 1,
-    Right = 2,
-    Up = 3,
-    Down = 4,
+    var presses = code.ToCharArray();
+    Console.WriteLine($"{code}: {new string(presses)}");
+
+    for (int i = 0; i < 4; i++)
+    {
+        var last = 'A';
+        presses = presses.SelectMany(c =>
+        {
+            var nextPresses = Enumerable.Empty<char>();
+            if (last != c)
+            {
+                nextPresses = GetDirPresses(last, c);
+                last = c;
+            }
+            return nextPresses.Append('A');
+        }).ToArray();
+        Console.WriteLine($"{code}: {i + 1}={new string(presses)}");
+    }
 }
+
+GetDirPressesComp("<");
